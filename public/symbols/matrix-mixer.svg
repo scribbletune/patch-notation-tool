@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-matrix-mixer" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="50,8 92,50 50,92 8,50" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <g stroke="#231d1f" stroke-width="2" stroke-dasharray="5 4"><line x1="26" y1="32" x2="74" y2="32"/><line x1="26" y1="50" x2="74" y2="50"/><line x1="26" y1="68" x2="74" y2="68"/><line x1="32" y1="26" x2="32" y2="74"/><line x1="50" y1="26" x2="50" y2="74"/><line x1="68" y1="26" x2="68" y2="74"/></g><g fill="#231d1f"><circle cx="32" cy="50" r="3"/><circle cx="50" cy="50" r="3"/><circle cx="68" cy="50" r="3"/></g>
+  
+    </svg>

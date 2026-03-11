@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-wavetable-oscillator" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="44" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <rect x="24" y="26" width="52" height="48" fill="none" stroke="#231d1f" stroke-width="2"/><line x1="50" y1="26" x2="50" y2="74" stroke="#231d1f" stroke-width="2"/><line x1="24" y1="50" x2="76" y2="50" stroke="#231d1f" stroke-width="2"/><path d="M28 41 C32 33, 36 33, 40 41 S48 49, 52 41" fill="none" stroke="#231d1f" stroke-width="2"/><polyline points="56,44 62,34 68,44 74,34" fill="none" stroke="#231d1f" stroke-width="2"/><path d="M28 61 C31 55, 34 55, 37 61 S43 67, 46 61" fill="none" stroke="#231d1f" stroke-width="2"/><polyline points="56,66 56,54 64,66 64,54 72,66 72,54" fill="none" stroke="#231d1f" stroke-width="2"/>
+  
+    </svg>

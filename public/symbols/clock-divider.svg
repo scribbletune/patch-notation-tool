@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-clock-divider" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="50,8 92,50 50,92 8,50" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <circle cx="34" cy="58" r="6" fill="#231d1f"/><line x1="40" y1="58" x2="40" y2="34" stroke="#231d1f" stroke-width="3"/><path d="M40 34 C48 34, 48 44, 40 44" fill="none" stroke="#231d1f" stroke-width="2.2"/><line x1="54" y1="44" x2="74" y2="44" stroke="#231d1f" stroke-width="3"/><line x1="64" y1="34" x2="64" y2="54" stroke="#231d1f" stroke-width="3"/>
+  
+    </svg>

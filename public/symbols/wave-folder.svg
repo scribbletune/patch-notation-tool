@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-wave-folder" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="14,12 90,50 14,88" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <path d="M26 56 C30 28, 38 28, 42 56 S54 84, 58 56 S70 28, 74 56" fill="none" stroke="#231d1f" stroke-width="3"/>
+  
+    </svg>

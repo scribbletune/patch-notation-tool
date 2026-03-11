@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-inverter-audio" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="14,12 90,50 14,88" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <path d="M28 50 C28 34, 38 34, 44 50 S56 66, 62 50" fill="none" stroke="#231d1f" stroke-width="3" stroke-dasharray="6 4"/><path d="M40 50 C40 34, 50 34, 56 50 S68 66, 74 50" fill="none" stroke="#231d1f" stroke-width="3"/>
+  
+    </svg>

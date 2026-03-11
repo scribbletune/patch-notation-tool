@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-microphone-input" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="44" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <path d="M42 38 C42 28, 58 28, 58 38 L58 52 C58 62, 42 62, 42 52 Z" fill="none" stroke="#231d1f" stroke-width="3"/><path d="M36 50 C36 68, 64 68, 64 50" fill="none" stroke="#231d1f" stroke-width="3"/><line x1="50" y1="68" x2="50" y2="78" stroke="#231d1f" stroke-width="3"/><line x1="40" y1="78" x2="60" y2="78" stroke="#231d1f" stroke-width="3"/>
+  
+    </svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-gate-delay" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="50,8 92,50 50,92 8,50" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <polyline points="22,64 34,64 34,36 50,36 50,64 72,64" fill="none" stroke="#231d1f" stroke-width="3"/><polyline points="22,64 26,64 26,28 42,28 42,56 58,56" fill="none" stroke="#231d1f" stroke-width="2" stroke-dasharray="4 4"/><line x1="42" y1="50" x2="56" y2="50" stroke="#231d1f" stroke-width="2.2"/><polyline points="50,44 56,50 50,56" fill="none" stroke="#231d1f" stroke-width="2.2"/>
+  
+    </svg>

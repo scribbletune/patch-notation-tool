@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-ring-modulator" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <polygon points="14,12 90,50 14,88" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <line x1="30" y1="34" x2="62" y2="66" stroke="#231d1f" stroke-width="3"/><line x1="62" y1="34" x2="30" y2="66" stroke="#231d1f" stroke-width="3"/><polyline points="50,28 62,28 62,40" fill="none" stroke="#231d1f" stroke-width="3"/><polyline points="42,72 30,72 30,60" fill="none" stroke="#231d1f" stroke-width="3"/>
+  
+    </svg>

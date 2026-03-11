@@ -1,0 +1,548 @@
+[
+  {
+    "id": "sine-wave-oscillator",
+    "label": "Sine wave oscillator",
+    "category": "audio-sources",
+    "file": "/symbols/sine-wave-oscillator.svg"
+  },
+  {
+    "id": "triangle-wave-oscillator",
+    "label": "Triangle wave oscillator",
+    "category": "audio-sources",
+    "file": "/symbols/triangle-wave-oscillator.svg"
+  },
+  {
+    "id": "sawtooth-wave-oscillator",
+    "label": "Sawtooth wave oscillator",
+    "category": "audio-sources",
+    "file": "/symbols/sawtooth-wave-oscillator.svg"
+  },
+  {
+    "id": "square-wave-oscillator",
+    "label": "Square wave oscillator",
+    "category": "audio-sources",
+    "file": "/symbols/square-wave-oscillator.svg"
+  },
+  {
+    "id": "oscillator-pwm",
+    "label": "Oscillator with PWM",
+    "category": "audio-sources",
+    "file": "/symbols/oscillator-pwm.svg"
+  },
+  {
+    "id": "noise",
+    "label": "Noise",
+    "category": "audio-sources",
+    "file": "/symbols/noise.svg"
+  },
+  {
+    "id": "wavetable-oscillator",
+    "label": "Wavetable oscillator",
+    "category": "audio-sources",
+    "file": "/symbols/wavetable-oscillator.svg"
+  },
+  {
+    "id": "granular-synthesis",
+    "label": "Granular synthesis",
+    "category": "audio-sources",
+    "file": "/symbols/granular-synthesis.svg"
+  },
+  {
+    "id": "microphone-input",
+    "label": "Microphone input",
+    "category": "audio-sources",
+    "file": "/symbols/microphone-input.svg"
+  },
+  {
+    "id": "sample-player",
+    "label": "Sample player",
+    "category": "audio-sources",
+    "file": "/symbols/sample-player.svg"
+  },
+  {
+    "id": "sample-recorder",
+    "label": "Sample recorder",
+    "category": "audio-sources",
+    "file": "/symbols/sample-recorder.svg"
+  },
+  {
+    "id": "physical-modelling-generic",
+    "label": "Physical modelling",
+    "category": "audio-sources",
+    "file": "/symbols/physical-modelling-generic.svg"
+  },
+  {
+    "id": "pipe-physical-modelling",
+    "label": "Pipe physical modelling",
+    "category": "audio-sources",
+    "file": "/symbols/pipe-physical-modelling.svg"
+  },
+  {
+    "id": "string-physical-modelling",
+    "label": "String physical modelling",
+    "category": "audio-sources",
+    "file": "/symbols/string-physical-modelling.svg"
+  },
+  {
+    "id": "membrane-physical-modelling",
+    "label": "Membrane physical modelling",
+    "category": "audio-sources",
+    "file": "/symbols/membrane-physical-modelling.svg"
+  },
+  {
+    "id": "speech-synthesis",
+    "label": "Speech synthesis",
+    "category": "audio-sources",
+    "file": "/symbols/speech-synthesis.svg"
+  },
+  {
+    "id": "keyboard-controller",
+    "label": "Keyboard controller",
+    "category": "cv-sources",
+    "file": "/symbols/keyboard-controller.svg"
+  },
+  {
+    "id": "touch-controller",
+    "label": "Touch controller",
+    "category": "cv-sources",
+    "file": "/symbols/touch-controller.svg"
+  },
+  {
+    "id": "cv-gate-sequencer",
+    "label": "CV+Gate sequencer",
+    "category": "cv-sources",
+    "file": "/symbols/cv-gate-sequencer.svg"
+  },
+  {
+    "id": "trigger-sequencer",
+    "label": "Trigger sequencer",
+    "category": "cv-sources",
+    "file": "/symbols/trigger-sequencer.svg"
+  },
+  {
+    "id": "source-clock",
+    "label": "Source clock",
+    "category": "cv-sources",
+    "file": "/symbols/source-clock.svg"
+  },
+  {
+    "id": "cv-recorder",
+    "label": "CV recorder",
+    "category": "cv-sources",
+    "file": "/symbols/cv-recorder.svg"
+  },
+  {
+    "id": "lfo-sine",
+    "label": "LFO sine",
+    "category": "cv-sources",
+    "file": "/symbols/lfo-sine.svg"
+  },
+  {
+    "id": "lfo-triangle",
+    "label": "LFO triangle",
+    "category": "cv-sources",
+    "file": "/symbols/lfo-triangle.svg"
+  },
+  {
+    "id": "lfo-square",
+    "label": "LFO square wave",
+    "category": "cv-sources",
+    "file": "/symbols/lfo-square.svg"
+  },
+  {
+    "id": "lfo-reset-sync",
+    "label": "LFO with reset sync",
+    "category": "cv-sources",
+    "file": "/symbols/lfo-reset-sync.svg"
+  },
+  {
+    "id": "tempo-synced-lfo-triangle",
+    "label": "Tempo synced LFO triangle",
+    "category": "cv-sources",
+    "file": "/symbols/tempo-synced-lfo-triangle.svg"
+  },
+  {
+    "id": "tempo-synced-lfo-saw",
+    "label": "Tempo synced LFO saw",
+    "category": "cv-sources",
+    "file": "/symbols/tempo-synced-lfo-saw.svg"
+  },
+  {
+    "id": "eg-ad",
+    "label": "EG AD",
+    "category": "cv-sources",
+    "file": "/symbols/eg-ad.svg"
+  },
+  {
+    "id": "eg-ar",
+    "label": "EG AR",
+    "category": "cv-sources",
+    "file": "/symbols/eg-ar.svg"
+  },
+  {
+    "id": "eg-adsr",
+    "label": "EG ADSR",
+    "category": "cv-sources",
+    "file": "/symbols/eg-adsr.svg"
+  },
+  {
+    "id": "eg-dadsr",
+    "label": "EG DADSR",
+    "category": "cv-sources",
+    "file": "/symbols/eg-dadsr.svg"
+  },
+  {
+    "id": "eg-ahdsr",
+    "label": "EG AHDSR",
+    "category": "cv-sources",
+    "file": "/symbols/eg-ahdsr.svg"
+  },
+  {
+    "id": "looping-eg-ahdsr",
+    "label": "Looping EG AHDSR",
+    "category": "cv-sources",
+    "file": "/symbols/looping-eg-ahdsr.svg"
+  },
+  {
+    "id": "looping-eg-dadsr",
+    "label": "Looping EG DADSR",
+    "category": "cv-sources",
+    "file": "/symbols/looping-eg-dadsr.svg"
+  },
+  {
+    "id": "looping-eg-adsr",
+    "label": "Looping EG ADSR",
+    "category": "cv-sources",
+    "file": "/symbols/looping-eg-adsr.svg"
+  },
+  {
+    "id": "looping-eg-ar",
+    "label": "Looping EG AR",
+    "category": "cv-sources",
+    "file": "/symbols/looping-eg-ar.svg"
+  },
+  {
+    "id": "looping-eg-ad",
+    "label": "Looping EG AD",
+    "category": "cv-sources",
+    "file": "/symbols/looping-eg-ad.svg"
+  },
+  {
+    "id": "bias-voltage",
+    "label": "Bias voltage",
+    "category": "cv-sources",
+    "file": "/symbols/bias-voltage.svg"
+  },
+  {
+    "id": "voltage-slider",
+    "label": "Voltage slider",
+    "category": "cv-sources",
+    "file": "/symbols/voltage-slider.svg"
+  },
+  {
+    "id": "stepped-random-cv",
+    "label": "Stepped random CV",
+    "category": "cv-sources",
+    "file": "/symbols/stepped-random-cv.svg"
+  },
+  {
+    "id": "smooth-random-cv",
+    "label": "Smooth random CV",
+    "category": "cv-sources",
+    "file": "/symbols/smooth-random-cv.svg"
+  },
+  {
+    "id": "envelope-follower",
+    "label": "Envelope follower",
+    "category": "cv-sources",
+    "file": "/symbols/envelope-follower.svg"
+  },
+  {
+    "id": "low-pass-filter",
+    "label": "Low-pass filter",
+    "category": "audio-modifiers",
+    "file": "/symbols/low-pass-filter.svg"
+  },
+  {
+    "id": "low-pass-filter-resonant",
+    "label": "Low-pass filter resonant",
+    "category": "audio-modifiers",
+    "file": "/symbols/low-pass-filter-resonant.svg"
+  },
+  {
+    "id": "high-pass-filter",
+    "label": "High-pass filter",
+    "category": "audio-modifiers",
+    "file": "/symbols/high-pass-filter.svg"
+  },
+  {
+    "id": "high-pass-filter-resonant",
+    "label": "High-pass filter resonant",
+    "category": "audio-modifiers",
+    "file": "/symbols/high-pass-filter-resonant.svg"
+  },
+  {
+    "id": "band-pass-filter",
+    "label": "Band-pass filter",
+    "category": "audio-modifiers",
+    "file": "/symbols/band-pass-filter.svg"
+  },
+  {
+    "id": "notch-filter",
+    "label": "Notch filter",
+    "category": "audio-modifiers",
+    "file": "/symbols/notch-filter.svg"
+  },
+  {
+    "id": "amplifier-vca",
+    "label": "Amplifier VCA",
+    "category": "audio-modifiers",
+    "file": "/symbols/amplifier-vca.svg"
+  },
+  {
+    "id": "low-pass-gate-lpg",
+    "label": "Low-pass gate",
+    "category": "audio-modifiers",
+    "file": "/symbols/low-pass-gate-lpg.svg"
+  },
+  {
+    "id": "ring-modulator",
+    "label": "Ring modulator",
+    "category": "audio-modifiers",
+    "file": "/symbols/ring-modulator.svg"
+  },
+  {
+    "id": "mixer-audio",
+    "label": "Mixer",
+    "category": "audio-modifiers",
+    "file": "/symbols/mixer-audio.svg"
+  },
+  {
+    "id": "attenuator-audio",
+    "label": "Attenuator",
+    "category": "audio-modifiers",
+    "file": "/symbols/attenuator-audio.svg"
+  },
+  {
+    "id": "crossfader",
+    "label": "Crossfader",
+    "category": "audio-modifiers",
+    "file": "/symbols/crossfader.svg"
+  },
+  {
+    "id": "inverter-audio",
+    "label": "Inverter",
+    "category": "audio-modifiers",
+    "file": "/symbols/inverter-audio.svg"
+  },
+  {
+    "id": "waveshaper",
+    "label": "Waveshaper",
+    "category": "audio-modifiers",
+    "file": "/symbols/waveshaper.svg"
+  },
+  {
+    "id": "wave-folder",
+    "label": "Wave folder",
+    "category": "audio-modifiers",
+    "file": "/symbols/wave-folder.svg"
+  },
+  {
+    "id": "half-wave-rectifier-audio",
+    "label": "Half wave rectifier",
+    "category": "audio-modifiers",
+    "file": "/symbols/half-wave-rectifier-audio.svg"
+  },
+  {
+    "id": "clipper-saturation",
+    "label": "Clipper saturation",
+    "category": "audio-modifiers",
+    "file": "/symbols/clipper-saturation.svg"
+  },
+  {
+    "id": "full-wave-rectifier-audio",
+    "label": "Full wave rectifier",
+    "category": "audio-modifiers",
+    "file": "/symbols/full-wave-rectifier-audio.svg"
+  },
+  {
+    "id": "reverb",
+    "label": "Reverb",
+    "category": "audio-modifiers",
+    "file": "/symbols/reverb.svg"
+  },
+  {
+    "id": "delay",
+    "label": "Delay",
+    "category": "audio-modifiers",
+    "file": "/symbols/delay.svg"
+  },
+  {
+    "id": "chorus",
+    "label": "Chorus",
+    "category": "audio-modifiers",
+    "file": "/symbols/chorus.svg"
+  },
+  {
+    "id": "phase-shifter",
+    "label": "Phase shifter",
+    "category": "audio-modifiers",
+    "file": "/symbols/phase-shifter.svg"
+  },
+  {
+    "id": "comb-filter",
+    "label": "Comb filter",
+    "category": "audio-modifiers",
+    "file": "/symbols/comb-filter.svg"
+  },
+  {
+    "id": "switch-audio",
+    "label": "Switch",
+    "category": "audio-modifiers",
+    "file": "/symbols/switch-audio.svg"
+  },
+  {
+    "id": "attenuator-cv",
+    "label": "Attenuator",
+    "category": "cv-modifiers",
+    "file": "/symbols/attenuator-cv.svg"
+  },
+  {
+    "id": "attenuverter",
+    "label": "Attenuverter",
+    "category": "cv-modifiers",
+    "file": "/symbols/attenuverter.svg"
+  },
+  {
+    "id": "mixer-cv",
+    "label": "Mixer",
+    "category": "cv-modifiers",
+    "file": "/symbols/mixer-cv.svg"
+  },
+  {
+    "id": "utility-mixer",
+    "label": "Utility mixer",
+    "category": "cv-modifiers",
+    "file": "/symbols/utility-mixer.svg"
+  },
+  {
+    "id": "attenuverting-mixer",
+    "label": "Attenuverting mixer",
+    "category": "cv-modifiers",
+    "file": "/symbols/attenuverting-mixer.svg"
+  },
+  {
+    "id": "matrix-mixer",
+    "label": "Matrix mixer",
+    "category": "cv-modifiers",
+    "file": "/symbols/matrix-mixer.svg"
+  },
+  {
+    "id": "dc-coupled-vca",
+    "label": "DC coupled VCA",
+    "category": "cv-modifiers",
+    "file": "/symbols/dc-coupled-vca.svg"
+  },
+  {
+    "id": "precision-adder",
+    "label": "Precision adder",
+    "category": "cv-modifiers",
+    "file": "/symbols/precision-adder.svg"
+  },
+  {
+    "id": "buffered-multiple",
+    "label": "Buffered multiple",
+    "category": "cv-modifiers",
+    "file": "/symbols/buffered-multiple.svg"
+  },
+  {
+    "id": "switch-cv",
+    "label": "Switch",
+    "category": "cv-modifiers",
+    "file": "/symbols/switch-cv.svg"
+  },
+  {
+    "id": "clock-divider",
+    "label": "Clock divider",
+    "category": "cv-modifiers",
+    "file": "/symbols/clock-divider.svg"
+  },
+  {
+    "id": "clock-multiplier",
+    "label": "Clock multiplier",
+    "category": "cv-modifiers",
+    "file": "/symbols/clock-multiplier.svg"
+  },
+  {
+    "id": "inverter-cv",
+    "label": "Inverter",
+    "category": "cv-modifiers",
+    "file": "/symbols/inverter-cv.svg"
+  },
+  {
+    "id": "half-wave-rectifier-cv",
+    "label": "Half wave rectifier",
+    "category": "cv-modifiers",
+    "file": "/symbols/half-wave-rectifier-cv.svg"
+  },
+  {
+    "id": "full-wave-rectifier-cv",
+    "label": "Full wave rectifier",
+    "category": "cv-modifiers",
+    "file": "/symbols/full-wave-rectifier-cv.svg"
+  },
+  {
+    "id": "comparator",
+    "label": "Comparator",
+    "category": "cv-modifiers",
+    "file": "/symbols/comparator.svg"
+  },
+  {
+    "id": "sample-and-hold",
+    "label": "Sample and hold",
+    "category": "cv-modifiers",
+    "file": "/symbols/sample-and-hold.svg"
+  },
+  {
+    "id": "quantizer",
+    "label": "Quantizer",
+    "category": "cv-modifiers",
+    "file": "/symbols/quantizer.svg"
+  },
+  {
+    "id": "slew-limiter",
+    "label": "Slew limiter",
+    "category": "cv-modifiers",
+    "file": "/symbols/slew-limiter.svg"
+  },
+  {
+    "id": "gate-delay",
+    "label": "Gate delay",
+    "category": "cv-modifiers",
+    "file": "/symbols/gate-delay.svg"
+  },
+  {
+    "id": "logic-and-function",
+    "label": "Logic AND function",
+    "category": "cv-modifiers",
+    "file": "/symbols/logic-and-function.svg"
+  },
+  {
+    "id": "logic-nand-function",
+    "label": "Logic NAND function",
+    "category": "cv-modifiers",
+    "file": "/symbols/logic-nand-function.svg"
+  },
+  {
+    "id": "logic-or-function",
+    "label": "Logic OR function",
+    "category": "cv-modifiers",
+    "file": "/symbols/logic-or-function.svg"
+  },
+  {
+    "id": "logic-xor-function",
+    "label": "Logic XOR function",
+    "category": "cv-modifiers",
+    "file": "/symbols/logic-xor-function.svg"
+  }
+]

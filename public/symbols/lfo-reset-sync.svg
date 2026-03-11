@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-lfo-reset-sync" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <rect x="12" y="12" width="76" height="76" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <polyline points="20,62 36,38 52,60 68,40" fill="none" stroke="#231d1f" stroke-width="3"/><line x1="16" y1="50" x2="84" y2="50" stroke="#231d1f" stroke-width="2" stroke-dasharray="4 4"/><line x1="52" y1="26" x2="52" y2="72" stroke="#231d1f" stroke-width="2" stroke-dasharray="4 4"/><circle cx="52" cy="62" r="3" fill="#231d1f"/>
+  
+    </svg>

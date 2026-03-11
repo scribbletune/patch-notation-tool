@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-sample-recorder" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="44" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <g stroke="#231d1f" stroke-width="2"><line x1="28" y1="50" x2="48" y2="50"/><line x1="36" y1="34" x2="36" y2="66"/><line x1="40" y1="38" x2="40" y2="62"/><line x1="44" y1="42" x2="44" y2="58"/></g><circle cx="66" cy="50" r="12" fill="#231d1f"/>
+  
+    </svg>

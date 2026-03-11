@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
+      
+    <defs>
+      <linearGradient id="fadeWave-pipe-physical-modelling" x1="0%" x2="100%">
+        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="44" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
+    <ellipse cx="30" cy="50" rx="8" ry="12" fill="none" stroke="#231d1f" stroke-width="3"/><path d="M38 38 L66 38 Q74 50 66 62 L38 62" fill="none" stroke="#231d1f" stroke-width="3" stroke-dasharray="4 4"/>
+  
+    </svg>
