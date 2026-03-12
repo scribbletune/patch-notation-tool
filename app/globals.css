@@ -91,9 +91,45 @@ button {
   line-height: 1.45;
 }
 
+.sidebar-credit {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.sidebar-credit a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 .control-stack {
   display: grid;
   gap: 10px;
+}
+
+.patch-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.patch-meta-label {
+  color: var(--muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.patch-meta-name {
+  font-size: 1rem;
+}
+
+.sidebar-status {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.4;
 }
 
 .search-input,
@@ -241,7 +277,9 @@ button {
     linear-gradient(90deg, rgba(255, 255, 255, 0.38) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
   background-size: 32px 32px, 32px 32px, auto;
-  box-shadow: inset 0 0 0 1px rgba(29, 26, 28, 0.08);
+  box-shadow:
+    inset 0 0 0 2px rgba(29, 26, 28, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
 .canvas-overlay {
@@ -416,6 +454,12 @@ button {
   gap: 10px;
 }
 
+.button-row.compact button {
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+}
+
 .button-row button {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -431,6 +475,52 @@ button {
 
 .button-row .primary-button:hover {
   background: #111012;
+}
+
+.patch-library {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.patch-library-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.patch-library-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.patch-library-open,
+.patch-library-delete {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.patch-library-open {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.patch-library-open span:last-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.patch-library-delete {
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #9b1e23;
 }
 
 @media (max-width: 1100px) {

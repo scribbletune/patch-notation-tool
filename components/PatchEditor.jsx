@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import SymbolIcon from "@/components/SymbolIcon";
+import {
+  deleteStoredPatch,
+  getStoredPatch,
+  listStoredPatches,
+  saveStoredPatch
+} from "@/lib/patchLibrary";
 import { symbolCategories, symbolMap, symbols } from "@/lib/symbols";
+import { buildSymbolInnerMarkup } from "@/lib/symbolPrimitives";
 
 const STORAGE_KEY = "patch-notation-tool-state-v1";
 const NODE_WIDTH = 122;
@@ -71,6 +78,15 @@ function createNode(symbolId, x, y) {
   };
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
 export default function PatchEditor() {
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
@@ -95,6 +111,11 @@ export default function PatchEditor() {
   const [isPanning, setIsPanning] = useState(false);
   const [selectionBox, setSelectionBox] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [storedPatches, setStoredPatches] = useState([]);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [currentPatchId, setCurrentPatchId] = useState(null);
+  const [currentPatchName, setCurrentPatchName] = useState("Untitled patch");
+  const [libraryMessage, setLibraryMessage] = useState("");
 
   function clearPaletteDrag() {
     paletteDragRef.current = null;
@@ -199,6 +220,152 @@ export default function PatchEditor() {
     });
   }
 
+  function getExportBounds() {
+    if (nodesRef.current.length === 0) {
+      return {
+        left: 0,
+        top: 0,
+        width: 1200,
+        height: 800
+      };
+    }
+
+    const padding = 160;
+    const left = Math.min(...nodesRef.current.map((node) => node.x)) - padding;
+    const top = Math.min(...nodesRef.current.map((node) => node.y)) - padding;
+    const right =
+      Math.max(...nodesRef.current.map((node) => node.x + NODE_WIDTH)) + padding;
+    const bottom =
+      Math.max(...nodesRef.current.map((node) => node.y + NODE_HEIGHT)) + padding;
+
+    return {
+      left: Math.max(0, left),
+      top: Math.max(0, top),
+      width: Math.min(STAGE_WIDTH, right) - Math.max(0, left),
+      height: Math.min(STAGE_HEIGHT, bottom) - Math.max(0, top)
+    };
+  }
+
+  function buildPatchSvgMarkup() {
+    const bounds = getExportBounds();
+    const connectionMarkup = connections
+      .map((connection) => {
+        const source = nodePositions[connection.from]?.output;
+        const target = nodePositions[connection.to]?.input;
+        if (!source || !target) {
+          return "";
+        }
+
+        return `<path d="${getConnectionPath(source, target)}" stroke="${cableColors[connection.color] || cableColors.modulation}" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.95" />`;
+      })
+      .join("");
+
+    const nodeMarkup = nodes
+      .map((node) => {
+        const symbol = symbolMap[node.symbolId];
+        if (!symbol) {
+          return "";
+        }
+
+        const iconX = node.x + 30;
+        const iconY = node.y + 8;
+        const labelY = node.y + 92;
+        const innerMarkup = buildSymbolInnerMarkup(symbol).replaceAll(
+          `fadeWave-${symbol.id}`,
+          `fadeWave-${symbol.id}-${node.id}`
+        );
+
+        return `
+          <g>
+            <rect x="${node.x}" y="${node.y}" width="${NODE_WIDTH}" height="${NODE_HEIGHT}" rx="18" fill="#f8f4ec" fill-opacity="0.95" stroke="#231d1f" stroke-opacity="0.16" />
+            <g transform="translate(${iconX}, ${iconY}) scale(0.62)">
+              ${innerMarkup}
+            </g>
+            <text x="${node.x + NODE_WIDTH / 2}" y="${labelY}" text-anchor="middle" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
+              ${escapeXml(symbol.label)}
+            </text>
+          </g>
+        `;
+      })
+      .join("");
+
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="${bounds.left} ${bounds.top} ${bounds.width} ${bounds.height}">
+        <rect x="${bounds.left}" y="${bounds.top}" width="${bounds.width}" height="${bounds.height}" fill="#eef1e8" />
+        <g opacity="0.55">
+          ${Array.from({ length: Math.ceil(bounds.height / GRID_SIZE) + 1 }, (_, index) => {
+            const y = bounds.top + index * GRID_SIZE;
+            return `<line x1="${bounds.left}" y1="${y}" x2="${bounds.left + bounds.width}" y2="${y}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
+          }).join("")}
+          ${Array.from({ length: Math.ceil(bounds.width / GRID_SIZE) + 1 }, (_, index) => {
+            const x = bounds.left + index * GRID_SIZE;
+            return `<line x1="${x}" y1="${bounds.top}" x2="${x}" y2="${bounds.top + bounds.height}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
+          }).join("")}
+        </g>
+        ${connectionMarkup}
+        ${nodeMarkup}
+      </svg>
+    `.trim();
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportSvg() {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const svg = buildPatchSvgMarkup();
+    downloadBlob(
+      new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+      `patch-${stamp}.svg`
+    );
+  }
+
+  function handleExportPng() {
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const svg = buildPatchSvgMarkup();
+    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(url);
+        window.alert("Could not create PNG export.");
+        return;
+      }
+
+      context.drawImage(image, 0, 0);
+      canvas.toBlob((pngBlob) => {
+        URL.revokeObjectURL(url);
+        if (!pngBlob) {
+          window.alert("Could not create PNG export.");
+          return;
+        }
+
+        downloadBlob(pngBlob, `patch-${stamp}.png`);
+      }, "image/png");
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      window.alert("Could not render PNG export.");
+    };
+
+    image.src = url;
+  }
+
   function normalizePatchState(state) {
     return {
       nodes: Array.isArray(state.nodes) ? state.nodes : [],
@@ -207,7 +374,26 @@ export default function PatchEditor() {
             ...connection,
             color: normalizeConnectionColor(connection.color)
           }))
-        : []
+        : [],
+      view:
+        state.view &&
+        typeof state.view.x === "number" &&
+        typeof state.view.y === "number" &&
+        typeof state.view.scale === "number"
+          ? {
+              x: state.view.x,
+              y: state.view.y,
+              scale: clampScale(state.view.scale)
+            }
+          : DEFAULT_VIEW
+    };
+  }
+
+  function getPatchPayload() {
+    return {
+      nodes,
+      connections,
+      view
     };
   }
 
@@ -268,6 +454,7 @@ export default function PatchEditor() {
         const normalized = normalizePatchState(parsed);
         setNodes(normalized.nodes);
         setConnections(normalized.connections);
+        setView(normalized.view);
       }
     } catch {
       // Ignore corrupted saved state.
@@ -277,9 +464,13 @@ export default function PatchEditor() {
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ nodes, connections })
+      JSON.stringify({ nodes, connections, view })
     );
-  }, [connections, nodes]);
+  }, [connections, nodes, view]);
+
+  useEffect(() => {
+    refreshStoredPatches();
+  }, []);
 
   useEffect(() => {
     function finishPaletteDrag(clientX, clientY) {
@@ -642,20 +833,108 @@ export default function PatchEditor() {
       const normalized = normalizePatchState(parsed);
       setNodes(normalized.nodes);
       setConnections(normalized.connections);
+      setView(normalized.view);
       setSelectedNodeIds([]);
       setSelectedConnectionId(null);
       setCablePreview(null);
+      setCurrentPatchId(null);
+      setCurrentPatchName("Imported patch");
+      setLibraryMessage("Opened JSON patch file.");
     } catch (error) {
       window.alert(error.message || "Could not open patch JSON.");
     }
   }
 
-  function savePatch() {
+  async function refreshStoredPatches() {
+    try {
+      const patches = await listStoredPatches();
+      setStoredPatches(patches);
+    } catch {
+      setLibraryMessage("Could not load local patch library.");
+    }
+  }
+
+  async function savePatch(saveAs = false) {
+    try {
+      const now = new Date().toISOString();
+      let patchId = currentPatchId;
+      let patchName = currentPatchName;
+
+      if (saveAs || !patchId) {
+        const suggested = saveAs ? `${currentPatchName} copy` : currentPatchName;
+        const enteredName = window.prompt("Patch name", suggested);
+        if (!enteredName) {
+          return;
+        }
+
+        patchName = enteredName.trim() || "Untitled patch";
+        patchId = saveAs
+          ? `patch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          : currentPatchId || `patch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      const existing = patchId ? await getStoredPatch(patchId) : null;
+      await saveStoredPatch({
+        id: patchId,
+        name: patchName,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+        ...getPatchPayload()
+      });
+
+      setCurrentPatchId(patchId);
+      setCurrentPatchName(patchName);
+      setLibraryMessage(`Saved "${patchName}" to local library.`);
+      await refreshStoredPatches();
+    } catch {
+      setLibraryMessage("Could not save patch to local library.");
+    }
+  }
+
+  async function openStoredPatchById(id) {
+    try {
+      const patch = await getStoredPatch(id);
+      if (!patch) {
+        setLibraryMessage("Patch not found.");
+        return;
+      }
+
+      const normalized = normalizePatchState(patch);
+      setNodes(normalized.nodes);
+      setConnections(normalized.connections);
+      setView(normalized.view);
+      setSelectedNodeIds([]);
+      setSelectedConnectionId(null);
+      setCablePreview(null);
+      setCurrentPatchId(patch.id);
+      setCurrentPatchName(patch.name || "Untitled patch");
+      setLibraryMessage(`Opened "${patch.name || "Untitled patch"}".`);
+      setLibraryOpen(false);
+    } catch {
+      setLibraryMessage("Could not open patch from local library.");
+    }
+  }
+
+  async function deleteStoredPatchById(id) {
+    try {
+      await deleteStoredPatch(id);
+      if (currentPatchId === id) {
+        setCurrentPatchId(null);
+        setCurrentPatchName("Untitled patch");
+      }
+      setLibraryMessage("Deleted patch from local library.");
+      await refreshStoredPatches();
+    } catch {
+      setLibraryMessage("Could not delete patch from local library.");
+    }
+  }
+
+  function exportPatchJson() {
     const patch = {
       version: 1,
       savedAt: new Date().toISOString(),
-      nodes,
-      connections
+      name: currentPatchName,
+      ...getPatchPayload()
     };
     const blob = new Blob([JSON.stringify(patch, null, 2)], {
       type: "application/json"
@@ -696,17 +975,23 @@ export default function PatchEditor() {
   function resetToSample() {
     setNodes(sampleState.nodes);
     setConnections(sampleState.connections);
+    setView(DEFAULT_VIEW);
     setSelectedNodeIds([]);
     setSelectedConnectionId(null);
     setCablePreview(null);
+    setCurrentPatchId(null);
+    setCurrentPatchName("Sample patch");
   }
 
   function clearCanvas() {
     setNodes([]);
     setConnections([]);
+    setView(DEFAULT_VIEW);
     setSelectedNodeIds([]);
     setSelectedConnectionId(null);
     setCablePreview(null);
+    setCurrentPatchId(null);
+    setCurrentPatchName("Untitled patch");
   }
 
   function handleCanvasPointerDown(event) {
@@ -773,6 +1058,10 @@ export default function PatchEditor() {
 
           <div className="sidebar-section">
             <div className="control-stack">
+              <div className="patch-meta">
+                <span className="patch-meta-label">Current patch</span>
+                <strong className="patch-meta-name">{currentPatchName}</strong>
+              </div>
               <input
                 className="search-input"
                 value={search}
@@ -792,6 +1081,27 @@ export default function PatchEditor() {
                 ))}
               </select>
             </div>
+            {libraryMessage ? <p className="sidebar-status">{libraryMessage}</p> : null}
+            <p className="sidebar-credit">
+              Symbols used from the free-to-use PATCH &amp; TWEAK patch symbols.
+              See{" "}
+              <a
+                href="https://www.patchandtweak.com/patch-symbols-explained/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                symbol overview
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://www.patchandtweak.com/symbols/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                licensing/download info
+              </a>
+              .
+            </p>
           </div>
 
           <div className="symbol-list">
@@ -822,11 +1132,48 @@ export default function PatchEditor() {
                 onChange={handlePatchFileChange}
               />
               <div className="button-row">
-                <button className="primary-button" onClick={savePatch}>
+                <button className="primary-button" onClick={() => savePatch(false)}>
                   Save
                 </button>
-                <button onClick={openPatchPicker}>Open</button>
+                <button onClick={() => savePatch(true)}>Save As</button>
+                <button
+                  onClick={() => {
+                    setLibraryOpen((current) => !current);
+                    refreshStoredPatches();
+                  }}
+                >
+                  Open
+                </button>
               </div>
+              <div className="button-row compact">
+                <button onClick={exportPatchJson}>Export JSON</button>
+                <button onClick={openPatchPicker}>Import JSON</button>
+              </div>
+              {libraryOpen ? (
+                <div className="patch-library">
+                  {storedPatches.length === 0 ? (
+                    <p className="patch-library-empty">No saved patches yet.</p>
+                  ) : (
+                    storedPatches.map((patch) => (
+                      <div key={patch.id} className="patch-library-item">
+                        <button
+                          className="patch-library-open"
+                          onClick={() => openStoredPatchById(patch.id)}
+                        >
+                          <span>{patch.name}</span>
+                          <span>{new Date(patch.updatedAt).toLocaleString()}</span>
+                        </button>
+                        <button
+                          className="patch-library-delete"
+                          onClick={() => deleteStoredPatchById(patch.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </aside>
@@ -846,6 +1193,12 @@ export default function PatchEditor() {
               </button>
               <button onClick={handleFitToContent} type="button">
                 Fit to content
+              </button>
+              <button onClick={handleExportSvg} type="button">
+                Export SVG
+              </button>
+              <button onClick={handleExportPng} type="button">
+                Export PNG
               </button>
             </div>
 
