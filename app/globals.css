@@ -175,6 +175,24 @@ button {
   align-items: center;
 }
 
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.zoom-readout {
+  min-width: 52px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .toolbar button,
 .toolbar select {
   border: 1px solid var(--line);

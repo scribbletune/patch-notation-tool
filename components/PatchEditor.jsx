@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import SymbolIcon from "@/components/SymbolIcon";
 import { symbolCategories, symbolMap, symbols } from "@/lib/symbols";
 
 const STORAGE_KEY = "patch-notation-tool-state-v1";
 const NODE_WIDTH = 122;
 const NODE_HEIGHT = 104;
+const PALETTE_DRAG_HOTSPOT_X = 78;
+const PALETTE_DRAG_HOTSPOT_Y = 24;
 const STAGE_WIDTH = 3200;
 const STAGE_HEIGHT = 2200;
 const MIN_SCALE = 0.45;
 const MAX_SCALE = 2.4;
+const DEFAULT_VIEW = { x: 120, y: 120, scale: 1 };
 
 const cableColors = {
   sound: "#f6ba00",
@@ -73,7 +77,7 @@ export default function PatchEditor() {
   const paletteDragRef = useRef(null);
   const cableDragRef = useRef(null);
   const fileInputRef = useRef(null);
-  const viewRef = useRef({ x: 120, y: 120, scale: 1 });
+  const viewRef = useRef(DEFAULT_VIEW);
   const nodesRef = useRef(sampleState.nodes);
   const suppressNodeClickRef = useRef(false);
 
@@ -86,9 +90,10 @@ export default function PatchEditor() {
   const [cableColor, setCableColor] = useState("modulation");
   const [paletteDrag, setPaletteDrag] = useState(null);
   const [cablePreview, setCablePreview] = useState(null);
-  const [view, setView] = useState({ x: 120, y: 120, scale: 1 });
+  const [view, setView] = useState(DEFAULT_VIEW);
   const [isPanning, setIsPanning] = useState(false);
   const [selectionBox, setSelectionBox] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
   function clearPaletteDrag() {
     paletteDragRef.current = null;
@@ -120,6 +125,39 @@ export default function PatchEditor() {
 
   function normalizeConnectionColor(color) {
     return cableColorAliases[color] || color || "modulation";
+  }
+
+  function zoomAtClientPoint(nextScale, clientX, clientY) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    const current = viewRef.current;
+    const clampedScale = clampScale(nextScale);
+    const point = toWorldPoint(clientX, clientY, current);
+
+    setView({
+      x: clientX - rect.left - point.x * clampedScale,
+      y: clientY - rect.top - point.y * clampedScale,
+      scale: clampedScale
+    });
+  }
+
+  function handleZoomStep(direction) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    const factor = direction > 0 ? 1.15 : 1 / 1.15;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    zoomAtClientPoint(viewRef.current.scale * factor, centerX, centerY);
+  }
+
+  function handleResetView() {
+    setView(DEFAULT_VIEW);
   }
 
   function normalizePatchState(state) {
@@ -169,6 +207,11 @@ export default function PatchEditor() {
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -222,8 +265,8 @@ export default function PatchEditor() {
           const point = toWorldPoint(clientX, clientY);
           addNodeToCanvas(
             palette.symbolId,
-            point.x - NODE_WIDTH / 2,
-            point.y - NODE_HEIGHT / 2
+            point.x - palette.hotspotX / viewRef.current.scale,
+            point.y - palette.hotspotY / viewRef.current.scale
           );
         }
       } else if (!moved) {
@@ -315,7 +358,9 @@ export default function PatchEditor() {
           setPaletteDrag({
             symbolId: palette.symbolId,
             x: event.clientX,
-            y: event.clientY
+            y: event.clientY,
+            hotspotX: palette.hotspotX,
+            hotspotY: palette.hotspotY
           });
         }
       }
@@ -449,7 +494,9 @@ export default function PatchEditor() {
       symbolId,
       startX: event.clientX,
       startY: event.clientY,
-      active: false
+      active: false,
+      hotspotX: PALETTE_DRAG_HOTSPOT_X,
+      hotspotY: PALETTE_DRAG_HOTSPOT_Y
     };
   }
 
@@ -659,22 +706,14 @@ export default function PatchEditor() {
   function handleCanvasWheel(event) {
     event.preventDefault();
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return;
-    }
-
     const current = viewRef.current;
     const zoomIntensity = event.ctrlKey ? 0.0025 : 0.0014;
     const zoomFactor = Math.exp(-event.deltaY * zoomIntensity);
-    const nextScale = clampScale(current.scale * zoomFactor);
-    const point = toWorldPoint(event.clientX, event.clientY, current);
-
-    setView({
-      x: event.clientX - rect.left - point.x * nextScale,
-      y: event.clientY - rect.top - point.y * nextScale,
-      scale: nextScale
-    });
+    zoomAtClientPoint(
+      current.scale * zoomFactor,
+      event.clientX,
+      event.clientY
+    );
   }
 
   return (
@@ -751,6 +790,19 @@ export default function PatchEditor() {
 
         <section className="panel workspace">
           <div className="toolbar">
+            <div className="zoom-controls">
+              <button onClick={() => handleZoomStep(-1)} type="button">
+                -
+              </button>
+              <span className="zoom-readout">{Math.round(view.scale * 100)}%</span>
+              <button onClick={() => handleZoomStep(1)} type="button">
+                +
+              </button>
+              <button onClick={handleResetView} type="button">
+                Reset view
+              </button>
+            </div>
+
             <button onClick={resetToSample}>Load sample patch</button>
             <button onClick={clearCanvas} className="danger">
               Clear canvas
@@ -904,22 +956,25 @@ export default function PatchEditor() {
               ) : null}
             </div>
 
-            {paletteDrag ? (
-              <div
-                className="palette-drag-preview"
-                style={{
-                  left: paletteDrag.x - NODE_WIDTH / 2,
-                  top: paletteDrag.y - NODE_HEIGHT / 2
-                }}
-              >
-                <div className="node-icon">
-                  <SymbolIcon symbol={symbolMap[paletteDrag.symbolId]} size={62} />
-                </div>
-              </div>
-            ) : null}
           </div>
         </section>
       </div>
+      {mounted && paletteDrag
+        ? createPortal(
+            <div
+              className="palette-drag-preview"
+              style={{
+                left: paletteDrag.x - paletteDrag.hotspotX,
+                top: paletteDrag.y - paletteDrag.hotspotY
+              }}
+            >
+              <div className="node-icon">
+                <SymbolIcon symbol={symbolMap[paletteDrag.symbolId]} size={62} />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </main>
   );
 }
