@@ -12,6 +12,7 @@ const PALETTE_DRAG_HOTSPOT_X = 78;
 const PALETTE_DRAG_HOTSPOT_Y = 24;
 const STAGE_WIDTH = 3200;
 const STAGE_HEIGHT = 2200;
+const GRID_SIZE = 32;
 const MIN_SCALE = 0.45;
 const MAX_SCALE = 2.4;
 const DEFAULT_VIEW = { x: 120, y: 120, scale: 1 };
@@ -111,6 +112,15 @@ export default function PatchEditor() {
     };
   }
 
+  function snapValue(value) {
+    return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  }
+
+  function snapNodePosition(x, y) {
+    const snapped = clampNodePosition(snapValue(x), snapValue(y));
+    return snapped;
+  }
+
   function toWorldPoint(clientX, clientY, currentView = viewRef.current) {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) {
@@ -158,6 +168,35 @@ export default function PatchEditor() {
 
   function handleResetView() {
     setView(DEFAULT_VIEW);
+  }
+
+  function handleFitToContent() {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    if (nodesRef.current.length === 0) {
+      setView(DEFAULT_VIEW);
+      return;
+    }
+
+    const padding = 120;
+    const left = Math.min(...nodesRef.current.map((node) => node.x));
+    const top = Math.min(...nodesRef.current.map((node) => node.y));
+    const right = Math.max(...nodesRef.current.map((node) => node.x + NODE_WIDTH));
+    const bottom = Math.max(...nodesRef.current.map((node) => node.y + NODE_HEIGHT));
+    const boundsWidth = right - left;
+    const boundsHeight = bottom - top;
+    const scaleX = (rect.width - padding * 2) / Math.max(boundsWidth, 1);
+    const scaleY = (rect.height - padding * 2) / Math.max(boundsHeight, 1);
+    const scale = clampScale(Math.min(scaleX, scaleY, 1.4));
+
+    setView({
+      x: rect.width / 2 - ((left + right) / 2) * scale,
+      y: rect.height / 2 - ((top + bottom) / 2) * scale,
+      scale
+    });
   }
 
   function normalizePatchState(state) {
@@ -324,14 +363,18 @@ export default function PatchEditor() {
           Math.max(deltaY, boundedDelta.minY),
           boundedDelta.maxY
         );
+        const snappedLeadX = snapValue(drag.originLead.x + safeDeltaX);
+        const snappedLeadY = snapValue(drag.originLead.y + safeDeltaY);
+        const snappedDeltaX = snappedLeadX - drag.originLead.x;
+        const snappedDeltaY = snappedLeadY - drag.originLead.y;
 
         setNodes((current) =>
           current.map((node) =>
             drag.selectedIds.includes(node.id)
               ? {
                   ...node,
-                  x: drag.origins[node.id].x + safeDeltaX,
-                  y: drag.origins[node.id].y + safeDeltaY
+                  x: drag.origins[node.id].x + snappedDeltaX,
+                  y: drag.origins[node.id].y + snappedDeltaY
                 }
               : node
           )
@@ -477,7 +520,7 @@ export default function PatchEditor() {
   }
 
   function addNodeToCanvas(symbolId, x, y) {
-    const next = clampNodePosition(x, y);
+    const next = snapNodePosition(x, y);
     setNodes((current) => [...current, createNode(symbolId, next.x, next.y)]);
   }
 
@@ -800,6 +843,9 @@ export default function PatchEditor() {
               </button>
               <button onClick={handleResetView} type="button">
                 Reset view
+              </button>
+              <button onClick={handleFitToContent} type="button">
+                Fit to content
               </button>
             </div>
 
