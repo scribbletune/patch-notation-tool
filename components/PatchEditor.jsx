@@ -7,6 +7,10 @@ import { symbolCategories, symbolMap, symbols } from "@/lib/symbols";
 const STORAGE_KEY = "patch-notation-tool-state-v1";
 const NODE_WIDTH = 122;
 const NODE_HEIGHT = 104;
+const STAGE_WIDTH = 3200;
+const STAGE_HEIGHT = 2200;
+const MIN_SCALE = 0.45;
+const MAX_SCALE = 2.4;
 
 const cableColors = {
   sound: "#f6ba00",
@@ -15,6 +19,14 @@ const cableColors = {
   pitch: "#7d94a5",
   clock: "#2f9e44"
 };
+
+const cableOptions = [
+  { id: "sound", label: "sound" },
+  { id: "modulation", label: "modulation" },
+  { id: "gate", label: "gate / trigger" },
+  { id: "clock", label: "clock" },
+  { id: "pitch", label: "pitch" }
+];
 
 const sampleState = {
   nodes: [
@@ -40,14 +52,6 @@ const cableColorAliases = {
   neutral: "pitch"
 };
 
-const cableOptions = [
-  { id: "sound", label: "sound" },
-  { id: "modulation", label: "modulation" },
-  { id: "gate", label: "gate / trigger" },
-  { id: "clock", label: "clock" },
-  { id: "pitch", label: "pitch" }
-];
-
 function getConnectionPath(source, target) {
   const dx = Math.max(100, Math.abs(target.x - source.x) * 0.45);
   return `M ${source.x} ${source.y} C ${source.x + dx} ${source.y}, ${target.x - dx} ${target.y}, ${target.x} ${target.y}`;
@@ -65,22 +69,53 @@ function createNode(symbolId, x, y) {
 export default function PatchEditor() {
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
+  const panRef = useRef(null);
   const paletteDragRef = useRef(null);
   const cableDragRef = useRef(null);
   const fileInputRef = useRef(null);
+  const viewRef = useRef({ x: 120, y: 120, scale: 1 });
+  const nodesRef = useRef(sampleState.nodes);
+  const suppressNodeClickRef = useRef(false);
+
   const [nodes, setNodes] = useState(sampleState.nodes);
   const [connections, setConnections] = useState(sampleState.connections);
-  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [cableColor, setCableColor] = useState("modulation");
   const [paletteDrag, setPaletteDrag] = useState(null);
   const [cablePreview, setCablePreview] = useState(null);
+  const [view, setView] = useState({ x: 120, y: 120, scale: 1 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [selectionBox, setSelectionBox] = useState(null);
 
   function clearPaletteDrag() {
     paletteDragRef.current = null;
     setPaletteDrag(null);
+  }
+
+  function clampScale(scale) {
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+  }
+
+  function clampNodePosition(x, y) {
+    return {
+      x: Math.min(Math.max(12, x), STAGE_WIDTH - NODE_WIDTH - 12),
+      y: Math.min(Math.max(12, y), STAGE_HEIGHT - NODE_HEIGHT - 12)
+    };
+  }
+
+  function toWorldPoint(clientX, clientY, currentView = viewRef.current) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: (clientX - rect.left - currentView.x) / currentView.scale,
+      y: (clientY - rect.top - currentView.y) / currentView.scale
+    };
   }
 
   function normalizeConnectionColor(color) {
@@ -116,6 +151,28 @@ export default function PatchEditor() {
       );
     });
   }, [category, search]);
+
+  const nodePositions = useMemo(
+    () =>
+      Object.fromEntries(
+        nodes.map((node) => [
+          node.id,
+          {
+            input: { x: node.x, y: node.y + 44 },
+            output: { x: node.x + NODE_WIDTH, y: node.y + 44 }
+          }
+        ])
+      ),
+    [nodes]
+  );
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -162,10 +219,11 @@ export default function PatchEditor() {
           clientY <= rect.bottom;
 
         if (insideCanvas) {
+          const point = toWorldPoint(clientX, clientY);
           addNodeToCanvas(
             palette.symbolId,
-            clientX - rect.left - NODE_WIDTH / 2,
-            clientY - rect.top - NODE_HEIGHT / 2
+            point.x - NODE_WIDTH / 2,
+            point.y - NODE_HEIGHT / 2
           );
         }
       } else if (!moved) {
@@ -175,25 +233,75 @@ export default function PatchEditor() {
       clearPaletteDrag();
     }
 
+    function clearTransientInteraction() {
+      dragRef.current = null;
+      panRef.current = null;
+      cableDragRef.current = null;
+      setIsPanning(false);
+      setCablePreview(null);
+      setSelectionBox(null);
+    }
+
     function onPointerMove(event) {
       const drag = dragRef.current;
-      const canvas = canvasRef.current;
-      if (drag && canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const nextX = event.clientX - rect.left - drag.offsetX;
-        const nextY = event.clientY - rect.top - drag.offsetY;
+      if (drag) {
+        const point = toWorldPoint(event.clientX, event.clientY);
+        const leadX = point.x - drag.offsetX;
+        const leadY = point.y - drag.offsetY;
+        const deltaX = leadX - drag.originLead.x;
+        const deltaY = leadY - drag.originLead.y;
+
+        const boundedDelta = drag.selectedIds.reduce(
+          (acc, id) => {
+            const origin = drag.origins[id];
+            if (!origin) {
+              return acc;
+            }
+
+            return {
+              minX: Math.max(acc.minX, 12 - origin.x),
+              maxX: Math.min(acc.maxX, STAGE_WIDTH - NODE_WIDTH - 12 - origin.x),
+              minY: Math.max(acc.minY, 12 - origin.y),
+              maxY: Math.min(acc.maxY, STAGE_HEIGHT - NODE_HEIGHT - 12 - origin.y)
+            };
+          },
+          {
+            minX: Number.NEGATIVE_INFINITY,
+            maxX: Number.POSITIVE_INFINITY,
+            minY: Number.NEGATIVE_INFINITY,
+            maxY: Number.POSITIVE_INFINITY
+          }
+        );
+
+        const safeDeltaX = Math.min(
+          Math.max(deltaX, boundedDelta.minX),
+          boundedDelta.maxX
+        );
+        const safeDeltaY = Math.min(
+          Math.max(deltaY, boundedDelta.minY),
+          boundedDelta.maxY
+        );
 
         setNodes((current) =>
           current.map((node) =>
-            node.id === drag.nodeId
+            drag.selectedIds.includes(node.id)
               ? {
                   ...node,
-                  x: Math.min(Math.max(12, nextX), rect.width - NODE_WIDTH - 12),
-                  y: Math.min(Math.max(12, nextY), rect.height - NODE_HEIGHT - 12)
+                  x: drag.origins[node.id].x + safeDeltaX,
+                  y: drag.origins[node.id].y + safeDeltaY
                 }
               : node
           )
         );
+      }
+
+      const pan = panRef.current?.mode === "pan" ? panRef.current : null;
+      if (pan) {
+        setView((current) => ({
+          ...current,
+          x: pan.originX + (event.clientX - pan.startX),
+          y: pan.originY + (event.clientY - pan.startY)
+        }));
       }
 
       const palette = paletteDragRef.current;
@@ -213,42 +321,66 @@ export default function PatchEditor() {
       }
 
       const cableDrag = cableDragRef.current;
-      if (cableDrag && canvas) {
-        const rect = canvas.getBoundingClientRect();
+      if (cableDrag) {
         setCablePreview({
           from: cableDrag.from,
-          to: {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top
-          },
+          to: toWorldPoint(event.clientX, event.clientY),
           color: cableDrag.color
+        });
+      }
+
+      const marquee = panRef.current?.mode === "select" ? panRef.current : null;
+      if (marquee) {
+        const point = toWorldPoint(event.clientX, event.clientY);
+        setSelectionBox({
+          x1: marquee.startWorld.x,
+          y1: marquee.startWorld.y,
+          x2: point.x,
+          y2: point.y
         });
       }
     }
 
     function onPointerUp(event) {
-      dragRef.current = null;
+      const marquee = panRef.current?.mode === "select" ? panRef.current : null;
+      if (marquee) {
+        const point = toWorldPoint(event.clientX, event.clientY);
+        const left = Math.min(marquee.startWorld.x, point.x);
+        const right = Math.max(marquee.startWorld.x, point.x);
+        const top = Math.min(marquee.startWorld.y, point.y);
+        const bottom = Math.max(marquee.startWorld.y, point.y);
+        const moved =
+          Math.abs(point.x - marquee.startWorld.x) > 4 ||
+          Math.abs(point.y - marquee.startWorld.y) > 4;
+        const nextSelected = nodesRef.current
+          .filter((node) => {
+            const nodeRight = node.x + NODE_WIDTH;
+            const nodeBottom = node.y + NODE_HEIGHT;
+            return (
+              node.x < right &&
+              nodeRight > left &&
+              node.y < bottom &&
+              nodeBottom > top
+            );
+          })
+          .map((node) => node.id);
+        setSelectedNodeIds(nextSelected);
+        setSelectedConnectionId(null);
+        suppressNodeClickRef.current = moved;
+      }
 
       finishPaletteDrag(event.clientX, event.clientY);
-
-      if (cableDragRef.current) {
-        cableDragRef.current = null;
-        setCablePreview(null);
-      }
+      clearTransientInteraction();
     }
 
     function onPointerCancel() {
       clearPaletteDrag();
-      dragRef.current = null;
-      cableDragRef.current = null;
-      setCablePreview(null);
+      clearTransientInteraction();
     }
 
     function onWindowBlur() {
       clearPaletteDrag();
-      dragRef.current = null;
-      cableDragRef.current = null;
-      setCablePreview(null);
+      clearTransientInteraction();
     }
 
     window.addEventListener("pointermove", onPointerMove);
@@ -267,8 +399,8 @@ export default function PatchEditor() {
   useEffect(() => {
     function onKeyDown(event) {
       if (event.key === "Delete" || event.key === "Backspace") {
-        if (selectedNodeId) {
-          removeNode(selectedNodeId);
+        if (selectedNodeIds.length > 0) {
+          removeNodes(selectedNodeIds);
         } else if (selectedConnectionId) {
           removeConnection(selectedConnectionId);
         }
@@ -277,26 +409,17 @@ export default function PatchEditor() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedConnectionId, selectedNodeId]);
+  }, [selectedConnectionId, selectedNodeIds, nodes]);
 
-  const nodePositions = useMemo(() => {
-    return Object.fromEntries(
-      nodes.map((node) => [
-        node.id,
-        {
-          input: { x: node.x, y: node.y + 44 },
-          output: { x: node.x + NODE_WIDTH, y: node.y + 44 }
-        }
-      ])
-    );
-  }, [nodes]);
-
-  function removeNode(nodeId) {
-    setNodes((current) => current.filter((node) => node.id !== nodeId));
+  function removeNodes(nodeIds) {
+    const ids = new Set(nodeIds);
+    setNodes((current) => current.filter((node) => !ids.has(node.id)));
     setConnections((current) =>
-      current.filter((connection) => connection.from !== nodeId && connection.to !== nodeId)
+      current.filter(
+        (connection) => !ids.has(connection.from) && !ids.has(connection.to)
+      )
     );
-    setSelectedNodeId((current) => (current === nodeId ? null : current));
+    setSelectedNodeIds((current) => current.filter((id) => !ids.has(id)));
   }
 
   function removeConnection(connectionId) {
@@ -309,7 +432,8 @@ export default function PatchEditor() {
   }
 
   function addNodeToCanvas(symbolId, x, y) {
-    setNodes((current) => [...current, createNode(symbolId, x, y)]);
+    const next = clampNodePosition(x, y);
+    setNodes((current) => [...current, createNode(symbolId, next.x, next.y)]);
   }
 
   function handlePalettePointerDown(event, symbolId) {
@@ -325,8 +449,7 @@ export default function PatchEditor() {
       symbolId,
       startX: event.clientX,
       startY: event.clientY,
-      active: false,
-      pointerId: event.pointerId
+      active: false
     };
   }
 
@@ -335,21 +458,39 @@ export default function PatchEditor() {
       return;
     }
 
-    const nodeElement = event.currentTarget;
-    const rect = nodeElement.getBoundingClientRect();
+    event.stopPropagation();
+
+    const point = toWorldPoint(event.clientX, event.clientY);
+    const node = nodes.find((entry) => entry.id === nodeId);
+    if (!node) {
+      return;
+    }
+
+    const nextSelectedIds = selectedNodeIds.includes(nodeId)
+      ? selectedNodeIds
+      : [nodeId];
+    const origins = Object.fromEntries(
+      nodes
+        .filter((entry) => nextSelectedIds.includes(entry.id))
+        .map((entry) => [entry.id, { x: entry.x, y: entry.y }])
+    );
+
     dragRef.current = {
       nodeId,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top
+      selectedIds: nextSelectedIds,
+      origins,
+      originLead: { x: node.x, y: node.y },
+      offsetX: point.x - node.x,
+      offsetY: point.y - node.y
     };
-    setSelectedNodeId(nodeId);
+    setSelectedNodeIds(nextSelectedIds);
     setSelectedConnectionId(null);
   }
 
   function handleAnchorPointerDown(event, nodeId, anchorType) {
     event.stopPropagation();
 
-    if (anchorType !== "output" || !canvasRef.current) {
+    if (anchorType !== "output") {
       return;
     }
 
@@ -368,7 +509,7 @@ export default function PatchEditor() {
       to: from,
       color: cableColor
     });
-    setSelectedNodeId(null);
+    setSelectedNodeIds([]);
     setSelectedConnectionId(null);
   }
 
@@ -411,7 +552,7 @@ export default function PatchEditor() {
       const normalized = normalizePatchState(parsed);
       setNodes(normalized.nodes);
       setConnections(normalized.connections);
-      setSelectedNodeId(null);
+      setSelectedNodeIds([]);
       setSelectedConnectionId(null);
       setCablePreview(null);
     } catch (error) {
@@ -465,7 +606,7 @@ export default function PatchEditor() {
   function resetToSample() {
     setNodes(sampleState.nodes);
     setConnections(sampleState.connections);
-    setSelectedNodeId(null);
+    setSelectedNodeIds([]);
     setSelectedConnectionId(null);
     setCablePreview(null);
   }
@@ -473,9 +614,67 @@ export default function PatchEditor() {
   function clearCanvas() {
     setNodes([]);
     setConnections([]);
-    setSelectedNodeId(null);
+    setSelectedNodeIds([]);
     setSelectedConnectionId(null);
     setCablePreview(null);
+  }
+
+  function handleCanvasPointerDown(event) {
+    const onNode = event.target.closest?.(".node-card");
+    const onConnection = event.target.closest?.(".connection-path");
+    if (onNode || onConnection) {
+      return;
+    }
+
+    const isPanGesture = event.button === 1 || ((event.metaKey || event.ctrlKey) && event.button === 0);
+
+    if (isPanGesture) {
+      event.preventDefault();
+      panRef.current = {
+        mode: "pan",
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: viewRef.current.x,
+        originY: viewRef.current.y
+      };
+      setIsPanning(true);
+    } else if (event.button === 0) {
+      const startWorld = toWorldPoint(event.clientX, event.clientY);
+      panRef.current = {
+        mode: "select",
+        startWorld
+      };
+      setSelectionBox({
+        x1: startWorld.x,
+        y1: startWorld.y,
+        x2: startWorld.x,
+        y2: startWorld.y
+      });
+    }
+
+    setSelectedNodeIds([]);
+    setSelectedConnectionId(null);
+  }
+
+  function handleCanvasWheel(event) {
+    event.preventDefault();
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    const current = viewRef.current;
+    const zoomIntensity = event.ctrlKey ? 0.0025 : 0.0014;
+    const zoomFactor = Math.exp(-event.deltaY * zoomIntensity);
+    const nextScale = clampScale(current.scale * zoomFactor);
+    const point = toWorldPoint(event.clientX, event.clientY, current);
+
+    setView({
+      x: event.clientX - rect.left - point.x * nextScale,
+      y: event.clientY - rect.top - point.y * nextScale,
+      scale: nextScale
+    });
   }
 
   return (
@@ -486,7 +685,7 @@ export default function PatchEditor() {
             <h1 className="sidebar-title">Patch Notation Tool</h1>
             <p className="sidebar-copy">
               Drag symbols into the canvas and connect them with color-coded cables
-              for sound, modulation, gate-trigger, and pitch flow.
+              for sound, modulation, gate-trigger, clock, and pitch flow.
             </p>
           </div>
 
@@ -557,10 +756,10 @@ export default function PatchEditor() {
               Clear canvas
             </button>
             <button
-              disabled={!selectedNodeId && !selectedConnectionId}
+              disabled={selectedNodeIds.length === 0 && !selectedConnectionId}
               onClick={() => {
-                if (selectedNodeId) {
-                  removeNode(selectedNodeId);
+                if (selectedNodeIds.length > 0) {
+                  removeNodes(selectedNodeIds);
                 } else if (selectedConnectionId) {
                   removeConnection(selectedConnectionId);
                 }
@@ -570,9 +769,8 @@ export default function PatchEditor() {
             </button>
 
             <span className="toolbar-note">
-              Click a color below, then drag from a right anchor to a left anchor
-              to create a cable. Drag from the left panel or click a symbol to
-              place it.
+              Middle-drag or Cmd/Ctrl-drag to pan. Left-drag empty space to select.
+              Use the wheel or trackpad pinch to zoom.
             </span>
           </div>
 
@@ -592,94 +790,119 @@ export default function PatchEditor() {
 
           <div
             ref={canvasRef}
-            className="canvas"
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setSelectedNodeId(null);
-                setSelectedConnectionId(null);
+            className={`canvas ${isPanning ? "is-panning" : ""}`}
+            onPointerDown={handleCanvasPointerDown}
+            onWheel={handleCanvasWheel}
+            onClickCapture={(event) => {
+              if (!suppressNodeClickRef.current) {
+                return;
               }
+
+              suppressNodeClickRef.current = false;
+              event.preventDefault();
+              event.stopPropagation();
             }}
           >
             {nodes.length === 0 ? (
               <div className="canvas-empty">
-                Drop symbols here to sketch a patch, then drag between anchors to
-                connect nodes.
+                Drop symbols here, middle-drag or Cmd/Ctrl-drag to pan, and use
+                the wheel or trackpad pinch to zoom.
               </div>
             ) : null}
 
-            <svg className="canvas-overlay" width="100%" height="100%">
-              {connections.map((connection) => {
-                const source = nodePositions[connection.from]?.output;
-                const target = nodePositions[connection.to]?.input;
-                if (!source || !target) {
+            <div
+              className="canvas-stage"
+              style={{
+                width: STAGE_WIDTH,
+                height: STAGE_HEIGHT,
+                transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`
+              }}
+            >
+              <svg className="canvas-overlay" width={STAGE_WIDTH} height={STAGE_HEIGHT}>
+                {connections.map((connection) => {
+                  const source = nodePositions[connection.from]?.output;
+                  const target = nodePositions[connection.to]?.input;
+                  if (!source || !target) {
+                    return null;
+                  }
+
+                  return (
+                    <path
+                      key={connection.id}
+                      className="connection-path"
+                      d={getConnectionPath(source, target)}
+                      stroke={cableColors[connection.color] || cableColors.modulation}
+                      strokeWidth={selectedConnectionId === connection.id ? "10" : "8"}
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity={selectedConnectionId === connection.id ? "1" : "0.95"}
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                        setSelectedConnectionId(connection.id);
+                        setSelectedNodeIds([]);
+                      }}
+                    />
+                  );
+                })}
+                {cablePreview ? (
+                  <path
+                    d={getConnectionPath(cablePreview.from, cablePreview.to)}
+                    stroke={cableColors[cablePreview.color] || cableColors.modulation}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.55"
+                    strokeDasharray="16 12"
+                  />
+                ) : null}
+              </svg>
+
+              {nodes.map((node) => {
+                const symbol = symbolMap[node.symbolId];
+                if (!symbol) {
                   return null;
                 }
 
                 return (
-                  <path
-                    key={connection.id}
-                    className="connection-path"
-                    d={getConnectionPath(source, target)}
-                    stroke={cableColors[connection.color] || cableColors.modulation}
-                    strokeWidth={selectedConnectionId === connection.id ? "10" : "8"}
-                    strokeLinecap="round"
-                    fill="none"
-                    opacity={selectedConnectionId === connection.id ? "1" : "0.95"}
-                    onPointerDown={(event) => {
-                      event.stopPropagation();
-                      setSelectedConnectionId(connection.id);
-                      setSelectedNodeId(null);
-                    }}
-                  />
+                  <article
+                    key={node.id}
+                    className={`node-card ${selectedNodeIds.includes(node.id) ? "selected" : ""}`}
+                    style={{ left: node.x, top: node.y }}
+                    onPointerDown={(event) => handleNodePointerDown(event, node.id)}
+                  >
+                    <button
+                      className="anchor input"
+                      title="Input anchor"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onPointerUp={(event) => handleAnchorPointerUp(event, node.id, "input")}
+                    />
+                    <button
+                      className="anchor output"
+                      title="Output anchor"
+                      onPointerDown={(event) =>
+                        handleAnchorPointerDown(event, node.id, "output")
+                      }
+                    />
+                    <div className="node-icon">
+                      <SymbolIcon symbol={symbol} size={62} />
+                    </div>
+                    <div className="node-label">{symbol.label}</div>
+                  </article>
                 );
               })}
-              {cablePreview ? (
-                <path
-                  d={getConnectionPath(cablePreview.from, cablePreview.to)}
-                  stroke={cableColors[cablePreview.color] || cableColors.modulation}
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.55"
-                  strokeDasharray="16 12"
+
+              {selectionBox ? (
+                <div
+                  className="selection-box"
+                  style={{
+                    left: Math.min(selectionBox.x1, selectionBox.x2),
+                    top: Math.min(selectionBox.y1, selectionBox.y2),
+                    width: Math.abs(selectionBox.x2 - selectionBox.x1),
+                    height: Math.abs(selectionBox.y2 - selectionBox.y1)
+                  }}
                 />
               ) : null}
-            </svg>
-
-            {nodes.map((node) => {
-              const symbol = symbolMap[node.symbolId];
-              if (!symbol) {
-                return null;
-              }
-
-              return (
-                <article
-                  key={node.id}
-                  className={`node-card ${selectedNodeId === node.id ? "selected" : ""}`}
-                  style={{ left: node.x, top: node.y }}
-                  onPointerDown={(event) => handleNodePointerDown(event, node.id)}
-                  onClick={() => setSelectedNodeId(node.id)}
-                >
-                  <button
-                    className="anchor input"
-                    title="Input anchor"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onPointerUp={(event) => handleAnchorPointerUp(event, node.id, "input")}
-                  />
-                  <button
-                    className="anchor output"
-                    title="Output anchor"
-                    onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "output")
-                    }
-                  />
-                  <div className="node-icon">
-                  <SymbolIcon symbol={symbol} size={62} />
-                </div>
-                  <div className="node-label">{symbol.label}</div>
-                </article>
-              );
-            })}
+            </div>
 
             {paletteDrag ? (
               <div
