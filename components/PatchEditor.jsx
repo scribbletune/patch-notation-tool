@@ -27,7 +27,7 @@ const STAGE_HEIGHT = 2200;
 const GRID_SIZE = 32;
 const MIN_SCALE = 0.45;
 const MAX_SCALE = 2.4;
-const DEFAULT_VIEW = { x: 120, y: 120, scale: 1 };
+const DEFAULT_VIEW = { x: 0, y: 0, scale: 1 };
 const SYMBOL_EXPORT_SIZE = 62;
 const SYMBOL_EXPORT_OFFSET_X = 30;
 const SYMBOL_EXPORT_OFFSET_Y = 8;
@@ -432,7 +432,10 @@ export default function PatchEditor() {
     };
   }
 
-  async function buildPatchSvgMarkup() {
+  async function buildPatchSvgMarkup({
+    includeBackground = true,
+    includeGrid = true
+  } = {}) {
     const bounds = getExportBounds();
     const symbolEntries = await Promise.all(
       [...new Set(nodes.map((node) => node.symbolId))].map(async (symbolId) => [
@@ -523,8 +526,8 @@ export default function PatchEditor() {
 
     return `
       <svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="${bounds.left} ${bounds.top} ${bounds.width} ${bounds.height}">
-        <rect x="${bounds.left}" y="${bounds.top}" width="${bounds.width}" height="${bounds.height}" fill="#eef1e8" />
-        <g opacity="0.55">
+        ${includeBackground ? `<rect x="${bounds.left}" y="${bounds.top}" width="${bounds.width}" height="${bounds.height}" fill="#eef1e8" />` : ""}
+        ${includeGrid ? `<g opacity="0.55">
           ${Array.from({ length: Math.ceil(bounds.height / GRID_SIZE) + 1 }, (_, index) => {
             const y = bounds.top + index * GRID_SIZE;
             return `<line x1="${bounds.left}" y1="${y}" x2="${bounds.left + bounds.width}" y2="${y}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
@@ -533,7 +536,7 @@ export default function PatchEditor() {
             const x = bounds.left + index * GRID_SIZE;
             return `<line x1="${x}" y1="${bounds.top}" x2="${x}" y2="${bounds.top + bounds.height}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
           }).join("")}
-        </g>
+        </g>` : ""}
         ${connectionMarkup}
         ${nodeMarkup}
       </svg>
@@ -567,7 +570,10 @@ export default function PatchEditor() {
   async function handleExportPng() {
     try {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const svg = await buildPatchSvgMarkup();
+      const svg = await buildPatchSvgMarkup({
+        includeBackground: false,
+        includeGrid: false
+      });
       const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const image = new Image();
@@ -583,6 +589,7 @@ export default function PatchEditor() {
           return;
         }
 
+        context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0);
         canvas.toBlob((pngBlob) => {
           URL.revokeObjectURL(url);
