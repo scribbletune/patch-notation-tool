@@ -32,6 +32,7 @@ const SYMBOL_EXPORT_OFFSET_X = 30;
 const SYMBOL_EXPORT_OFFSET_Y = 8;
 const HORIZONTAL_ANCHOR_Y = NODE_HEIGHT / 2;
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const PORT_KEYS = ["top", "right", "bottom", "left"];
 
 const cableColors = {
   sound: "#f6ba00",
@@ -48,6 +49,25 @@ const cableOptions = [
   { id: "clock", label: "clock" },
   { id: "pitch", label: "pitch" }
 ];
+const SELECT_TOOL_ID = "select";
+const TEXT_TOOL_ID = "text";
+
+const toolDescriptions = {
+  [SELECT_TOOL_ID]:
+    "Select, move, and area-select symbols. Use this as the default editing mode.",
+  [TEXT_TOOL_ID]:
+    "Click a symbol to add a note, or click any input/output patch point to annotate that port.",
+  sound:
+    "Audio cable. Connects horizontally from the right output of one symbol to the left input of another.",
+  modulation:
+    "Modulation cable. Connects vertically from the top output of one symbol to the bottom input of another.",
+  gate:
+    "Gate / trigger cable. Use for triggers and gates; it connects vertically from top output to bottom input.",
+  clock:
+    "Clock cable. Use for clock and timing signals; it connects vertically from top output to bottom input.",
+  pitch:
+    "Pitch cable. Use for pitch CV; it connects vertically from top output to bottom input."
+};
 
 const sampleState = {
   nodes: [
@@ -170,7 +190,9 @@ function createNode(symbolId, x, y) {
     id: `${symbolId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     symbolId,
     x: Math.round(x),
-    y: Math.round(y)
+    y: Math.round(y),
+    note: "",
+    portNotes: {}
   };
 }
 
@@ -199,6 +221,19 @@ function ToolbarIcon({ children }) {
 }
 
 const symbolDataUriCache = new Map();
+
+function normalizeNode(node) {
+  return {
+    ...node,
+    note: typeof node.note === "string" ? node.note : "",
+    portNotes:
+      node.portNotes && typeof node.portNotes === "object"
+        ? Object.fromEntries(
+            PORT_KEYS.map((key) => [key, typeof node.portNotes[key] === "string" ? node.portNotes[key] : ""])
+          )
+        : {}
+  };
+}
 
 async function getSymbolDataUri(symbolId) {
   if (symbolDataUriCache.has(symbolId)) {
@@ -235,6 +270,7 @@ export default function PatchEditor() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [cableColor, setCableColor] = useState("modulation");
+  const [activeTool, setActiveTool] = useState(SELECT_TOOL_ID);
   const [paletteDrag, setPaletteDrag] = useState(null);
   const [cablePreview, setCablePreview] = useState(null);
   const [view, setView] = useState(sampleState.view || DEFAULT_VIEW);
@@ -246,6 +282,10 @@ export default function PatchEditor() {
   const [currentPatchId, setCurrentPatchId] = useState(null);
   const [currentPatchName, setCurrentPatchName] = useState("Untitled patch");
   const [libraryMessage, setLibraryMessage] = useState("");
+  const activeToolDescription =
+    activeTool === "cable"
+      ? toolDescriptions[cableColor]
+      : toolDescriptions[activeTool];
 
   function clearPaletteDrag() {
     paletteDragRef.current = null;
@@ -360,7 +400,7 @@ export default function PatchEditor() {
       };
     }
 
-    const padding = 160;
+    const padding = 220;
     const left = Math.min(...nodesRef.current.map((node) => node.x)) - padding;
     const top = Math.min(...nodesRef.current.map((node) => node.y)) - padding;
     const right =
@@ -412,6 +452,40 @@ export default function PatchEditor() {
         if (!assetUri) {
           return "";
         }
+        const noteMarkup = node.note
+          ? `
+            <g>
+              <rect x="${node.x + NODE_WIDTH + 10}" y="${node.y + 8}" width="164" height="24" rx="10" fill="#fffdf8" fill-opacity="0.94" stroke="#231d1f" stroke-opacity="0.16" />
+              <text x="${node.x + NODE_WIDTH + 20}" y="${node.y + 24}" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
+                ${escapeXml(node.note)}
+              </text>
+            </g>
+          `
+          : "";
+        const portNoteMarkup = PORT_KEYS.map((portKey) => {
+          const note = node.portNotes?.[portKey];
+          if (!note) {
+            return "";
+          }
+          const anchor = nodePositions[node.id]?.[portKey];
+          if (!anchor) {
+            return "";
+          }
+
+          const textPositionByPort = {
+            top: { x: anchor.x + 10, y: anchor.y - 12 },
+            right: { x: anchor.x + 14, y: anchor.y + 4 },
+            bottom: { x: anchor.x + 10, y: anchor.y + 26 },
+            left: { x: anchor.x - 88, y: anchor.y + 4 }
+          };
+          const textPosition = textPositionByPort[portKey];
+
+          return `
+            <text x="${textPosition.x}" y="${textPosition.y}" font-size="10" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f" fill-opacity="0.88">
+              ${escapeXml(note)}
+            </text>
+          `;
+        }).join("");
 
         return `
           <g>
@@ -424,6 +498,8 @@ export default function PatchEditor() {
             <text x="${node.x + NODE_WIDTH / 2}" y="${labelY}" text-anchor="middle" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
               ${escapeXml(symbol.label)}
             </text>
+            ${noteMarkup}
+            ${portNoteMarkup}
           </g>
         `;
       })
@@ -516,7 +592,7 @@ export default function PatchEditor() {
 
   function normalizePatchState(state) {
     return {
-      nodes: Array.isArray(state.nodes) ? state.nodes : [],
+      nodes: Array.isArray(state.nodes) ? state.nodes.map(normalizeNode) : [],
       connections: Array.isArray(state.connections)
         ? state.connections.map((connection) => ({
             ...connection,
@@ -827,6 +903,16 @@ export default function PatchEditor() {
 
   useEffect(() => {
     function onKeyDown(event) {
+      const target = event.target;
+      const isEditableTarget =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isEditableTarget) {
+        return;
+      }
+
       if (event.key === "Delete" || event.key === "Backspace") {
         if (selectedNodeIds.length > 0) {
           removeNodes(selectedNodeIds);
@@ -865,6 +951,64 @@ export default function PatchEditor() {
     setNodes((current) => [...current, createNode(symbolId, next.x, next.y)]);
   }
 
+  function updateNodeNote(nodeId, value) {
+    setNodes((current) =>
+      current.map((node) => (node.id === nodeId ? { ...node, note: value } : node))
+    );
+  }
+
+  function updateNodePortNote(nodeId, portKey, value) {
+    setNodes((current) =>
+      current.map((node) =>
+        node.id === nodeId
+          ? {
+              ...node,
+              portNotes: {
+                ...(node.portNotes || {}),
+                [portKey]: value
+              }
+            }
+          : node
+      )
+    );
+  }
+
+  function promptForNodeNote(nodeId) {
+    const node = nodes.find((entry) => entry.id === nodeId);
+    if (!node) {
+      return;
+    }
+
+    const symbol = symbolMap[node.symbolId];
+    const nextValue = window.prompt(
+      `Note for ${symbol?.label || "symbol"}`,
+      node.note || ""
+    );
+    if (nextValue === null) {
+      return;
+    }
+
+    updateNodeNote(nodeId, nextValue.trim());
+  }
+
+  function promptForPortNote(nodeId, portKey) {
+    const node = nodes.find((entry) => entry.id === nodeId);
+    if (!node) {
+      return;
+    }
+
+    const symbol = symbolMap[node.symbolId];
+    const nextValue = window.prompt(
+      `${portKey} patch point note for ${symbol?.label || "symbol"}`,
+      node.portNotes?.[portKey] || ""
+    );
+    if (nextValue === null) {
+      return;
+    }
+
+    updateNodePortNote(nodeId, portKey, nextValue.trim());
+  }
+
   function handlePalettePointerDown(event, symbolId) {
     if (event.button !== 0) {
       return;
@@ -890,6 +1034,11 @@ export default function PatchEditor() {
     }
 
     event.stopPropagation();
+
+    if (activeTool === TEXT_TOOL_ID) {
+      promptForNodeNote(nodeId);
+      return;
+    }
 
     const point = toWorldPoint(event.clientX, event.clientY);
     const node = nodes.find((entry) => entry.id === nodeId);
@@ -920,6 +1069,12 @@ export default function PatchEditor() {
 
   function handleAnchorPointerDown(event, nodeId, anchorType) {
     event.stopPropagation();
+
+    if (activeTool === TEXT_TOOL_ID) {
+      const [, portKey] = anchorType.split("-");
+      promptForPortNote(nodeId, portKey);
+      return;
+    }
 
     const expected = getAnchorKeysForColor(cableColor);
     if (anchorType !== `output-${expected.output}`) {
@@ -1439,6 +1594,7 @@ export default function PatchEditor() {
               ) : null}
             </div>
           </div>
+
         </aside>
 
         <section className="panel workspace">
@@ -1644,24 +1800,42 @@ export default function PatchEditor() {
             </button>
 
             <span className="toolbar-note">
-              Middle-drag or Cmd/Ctrl-drag to pan. Left-drag empty space to select.
-              Use the wheel or trackpad pinch to zoom.
+              Use Select for moving, a cable color for patching, and Text for
+              annotations. Middle-drag or Cmd/Ctrl-drag pans.
             </span>
           </div>
 
           <div className="canvas-legend">
+            <button
+              className={`legend-swatch select-tool ${activeTool === SELECT_TOOL_ID ? "selected" : ""}`}
+              onClick={() => setActiveTool(SELECT_TOOL_ID)}
+              type="button"
+            >
+              Select
+            </button>
             {cableOptions.map((option) => (
               <button
                 key={option.id}
-                className={`legend-swatch ${cableColor === option.id ? "selected" : ""}`}
+                className={`legend-swatch ${activeTool === "cable" && cableColor === option.id ? "selected" : ""}`}
                 style={{ color: cableColors[option.id] }}
-                onClick={() => setCableColor(option.id)}
+                onClick={() => {
+                  setCableColor(option.id);
+                  setActiveTool("cable");
+                }}
                 type="button"
               >
                 {option.label}
               </button>
             ))}
+            <button
+              className={`legend-swatch text-tool ${activeTool === TEXT_TOOL_ID ? "selected" : ""}`}
+              onClick={() => setActiveTool(TEXT_TOOL_ID)}
+              type="button"
+            >
+              Text
+            </button>
           </div>
+          <p className="tool-help">{activeToolDescription}</p>
 
           <div
             ref={canvasRef}
@@ -1680,8 +1854,8 @@ export default function PatchEditor() {
           >
             {nodes.length === 0 ? (
               <div className="canvas-empty">
-                Drop symbols here, middle-drag or Cmd/Ctrl-drag to pan, and use
-                the wheel or trackpad pinch to zoom.
+                Drop symbols here, switch between Select, cable colors, and Text,
+                then use middle-drag or Cmd/Ctrl-drag to pan.
               </div>
             ) : null}
 
@@ -1749,7 +1923,9 @@ export default function PatchEditor() {
                   <button
                     className="anchor input left"
                     title="Left input anchor"
-                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerDown={(event) =>
+                      handleAnchorPointerDown(event, node.id, "input-left")
+                    }
                     onPointerUp={(event) =>
                       handleAnchorPointerUp(event, node.id, "input-left")
                     }
@@ -1764,7 +1940,9 @@ export default function PatchEditor() {
                   <button
                     className="anchor input bottom"
                     title="Bottom input anchor"
-                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerDown={(event) =>
+                      handleAnchorPointerDown(event, node.id, "input-bottom")
+                    }
                     onPointerUp={(event) =>
                       handleAnchorPointerUp(event, node.id, "input-bottom")
                     }
@@ -1780,6 +1958,17 @@ export default function PatchEditor() {
                       <SymbolIcon symbol={symbol} size={62} />
                     </div>
                     <div className="node-label">{symbol.label}</div>
+                    {node.note ? <div className="node-note-badge">{node.note}</div> : null}
+                    {PORT_KEYS.map((portKey) =>
+                      node.portNotes?.[portKey] ? (
+                        <div
+                          key={portKey}
+                          className={`port-note port-note-${portKey}`}
+                        >
+                          {node.portNotes[portKey]}
+                        </div>
+                      ) : null
+                    )}
                   </article>
                 );
               })}

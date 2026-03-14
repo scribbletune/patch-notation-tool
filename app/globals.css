@@ -198,7 +198,7 @@ button {
 .workspace {
   padding: 18px;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 16px;
   min-height: 0;
   overflow: hidden;
@@ -330,7 +330,7 @@ button {
 .palette-drag-preview {
   position: fixed;
   width: 122px;
-  min-height: 104px;
+  height: 104px;
   padding: 8px 10px 10px;
   border-radius: 18px;
   border: 1px solid rgba(29, 26, 28, 0.16);
@@ -344,7 +344,7 @@ button {
 .node-card {
   position: absolute;
   width: 122px;
-  min-height: 104px;
+  height: 104px;
   padding: 8px 10px 10px;
   border-radius: 18px;
   border: 1px solid rgba(29, 26, 28, 0.16);
@@ -375,6 +375,49 @@ button {
   font-size: 0.74rem;
   line-height: 1.15;
   text-align: center;
+}
+
+.node-note-badge,
+.port-note {
+  position: absolute;
+  font-size: 0.66rem;
+  line-height: 1.2;
+  color: #231d1f;
+  white-space: nowrap;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(29, 26, 28, 0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
+  box-shadow: 0 6px 16px rgba(22, 30, 38, 0.08);
+  z-index: 2;
+  max-width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-note-badge {
+  top: 8px;
+  left: calc(100% + 10px);
+}
+
+.port-note-top {
+  left: calc(50% + 12px);
+  top: -22px;
+}
+
+.port-note-right {
+  left: calc(100% + 12px);
+  top: calc(50% - 12px);
+}
+
+.port-note-bottom {
+  left: calc(50% + 12px);
+  bottom: -22px;
+}
+
+.port-note-left {
+  right: calc(100% + 12px);
+  top: calc(50% - 12px);
 }
 
 .anchor {
@@ -464,6 +507,14 @@ button {
   font-size: 0.9rem;
 }
 
+.tool-help {
+  margin: -6px 0 2px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  max-width: 840px;
+}
+
 .legend-swatch {
   display: inline-flex;
   align-items: center;
@@ -497,7 +548,73 @@ button {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75);
 }
 
+.legend-swatch.select-tool {
+  color: var(--ink);
+}
+
+.legend-swatch.select-tool::before {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  content: "↖";
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.legend-swatch.text-tool {
+  color: var(--ink);
+}
+
+.legend-swatch.text-tool::before {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  content: "T";
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .file-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.note-editor-section {
+  padding-top: 0;
+  padding-bottom: 18px;
+  overflow: auto;
+}
+
+.note-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.note-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.note-textarea,
+.port-note-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+}
+
+.note-textarea {
+  resize: vertical;
+  min-height: 78px;
+  padding: 10px 12px;
+}
+
+.port-note-grid {
   display: grid;
   gap: 10px;
 }
