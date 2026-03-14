@@ -30,6 +30,7 @@ const DEFAULT_VIEW = { x: 120, y: 120, scale: 1 };
 const SYMBOL_EXPORT_SIZE = 62;
 const SYMBOL_EXPORT_OFFSET_X = 30;
 const SYMBOL_EXPORT_OFFSET_Y = 8;
+const HORIZONTAL_ANCHOR_Y = NODE_HEIGHT / 2;
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const cableColors = {
@@ -159,8 +160,8 @@ function getAnchorKeysForColor(color) {
   }
 
   return {
-    output: "bottom",
-    input: "top"
+    output: "top",
+    input: "bottom"
   };
 }
 
@@ -400,10 +401,10 @@ export default function PatchEditor() {
         return `
           <g>
             <rect x="${node.x}" y="${node.y}" width="${NODE_WIDTH}" height="${NODE_HEIGHT}" rx="18" fill="#f8f4ec" fill-opacity="0.95" stroke="#231d1f" stroke-opacity="0.16" />
-            <circle cx="${node.x}" cy="${node.y + 44}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
-            <circle cx="${node.x + NODE_WIDTH}" cy="${node.y + 44}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
-            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
-            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y + NODE_HEIGHT}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
+            <circle cx="${node.x}" cy="${node.y + HORIZONTAL_ANCHOR_Y}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH}" cy="${node.y + HORIZONTAL_ANCHOR_Y}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y + NODE_HEIGHT}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
             <image x="${iconX}" y="${iconY}" width="${SYMBOL_EXPORT_SIZE}" height="${SYMBOL_EXPORT_SIZE}" href="${assetUri}" preserveAspectRatio="xMidYMid meet" />
             <text x="${node.x + NODE_WIDTH / 2}" y="${labelY}" text-anchor="middle" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
               ${escapeXml(symbol.label)}
@@ -553,8 +554,8 @@ export default function PatchEditor() {
         nodes.map((node) => [
           node.id,
           {
-            left: { x: node.x, y: node.y + 44 },
-            right: { x: node.x + NODE_WIDTH, y: node.y + 44 },
+            left: { x: node.x, y: node.y + HORIZONTAL_ANCHOR_Y },
+            right: { x: node.x + NODE_WIDTH, y: node.y + HORIZONTAL_ANCHOR_Y },
             top: { x: node.x + NODE_WIDTH / 2, y: node.y },
             bottom: { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT }
           }
@@ -1478,18 +1479,18 @@ export default function PatchEditor() {
                     }
                   />
                   <button
-                    className="anchor input top"
-                    title="Top input anchor"
+                    className="anchor input bottom"
+                    title="Bottom input anchor"
                     onPointerDown={(event) => event.stopPropagation()}
                     onPointerUp={(event) =>
-                      handleAnchorPointerUp(event, node.id, "input-top")
+                      handleAnchorPointerUp(event, node.id, "input-bottom")
                     }
                   />
                   <button
-                    className="anchor output bottom"
-                    title="Bottom output anchor"
+                    className="anchor output top"
+                    title="Top output anchor"
                     onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "output-bottom")
+                      handleAnchorPointerDown(event, node.id, "output-top")
                     }
                   />
                     <div className="node-icon">
