@@ -10,6 +10,9 @@ const nextConfig = {
   reactStrictMode: true,
   output: "export",
   trailingSlash: true,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath
+  },
   images: {
     unoptimized: true
   },

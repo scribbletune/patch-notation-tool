@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="160" height="160" fill="none">
-      
-    <defs>
-      <linearGradient id="fadeWave-membrane-physical-modelling" x1="0%" x2="100%">
-        <stop offset="0%" stop-color="#231d1f" stop-opacity="0.95" />
-        <stop offset="100%" stop-color="#231d1f" stop-opacity="0.05" />
-      </linearGradient>
-    </defs>
-    <circle cx="50" cy="50" r="44" fill="#faf7f0" stroke="#231d1f" stroke-width="3" />
-    <ellipse cx="50" cy="38" rx="20" ry="5" fill="none" stroke="#231d1f" stroke-width="3"/><ellipse cx="50" cy="58" rx="20" ry="5" fill="none" stroke="#231d1f" stroke-width="3" stroke-dasharray="4 4"/><line x1="30" y1="38" x2="30" y2="58" stroke="#231d1f" stroke-width="2" stroke-dasharray="4 4"/><line x1="70" y1="38" x2="70" y2="58" stroke="#231d1f" stroke-width="2" stroke-dasharray="4 4"/>
-  
-    </svg>
+<svg id="Lag_1" data-name="Lag 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><style>.cls-1{fill:#fff;}.cls-2{fill:#272525;}.cls-3,.cls-4,.cls-5{fill:none;stroke:#272525;}.cls-3{stroke-linecap:round;stroke-linejoin:round;}.cls-3,.cls-5{stroke-width:2px;}.cls-4,.cls-5{stroke-miterlimit:10;}.cls-4{stroke-width:1.97px;stroke-dasharray:2.07 1.97;}.cls-5{stroke-dasharray:2.1 2;}</style></defs><title>physical-model-membrane</title><g id="circle"><circle class="cls-1" cx="40" cy="40" r="39"/><path class="cls-2" d="M40,2A38,38,0,1,1,2,40,38,38,0,0,1,40,2m0-2A40,40,0,1,0,80,40,40,40,0,0,0,40,0Z"/></g><ellipse class="cls-3" cx="40.01" cy="32.63" rx="21.79" ry="3.71"/><ellipse class="cls-4" cx="40.01" cy="47.48" rx="21.79" ry="3.62"/><line class="cls-5" x1="61.78" y1="47.46" x2="61.78" y2="31.59"/><line class="cls-5" x1="18.2" y1="47.46" x2="18.2" y2="31.59"/></svg>

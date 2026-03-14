@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate symbol assets
-        run: npm run generate:symbols
-
       - name: Build static export
         run: npm run build
         env:

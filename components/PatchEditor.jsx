@@ -9,8 +9,12 @@ import {
   listStoredPatches,
   saveStoredPatch
 } from "@/lib/patchLibrary";
-import { symbolCategories, symbolMap, symbols } from "@/lib/symbols";
-import { buildSymbolInnerMarkup } from "@/lib/symbolPrimitives";
+import {
+  getSymbolAssetPath,
+  symbolCategories,
+  symbolMap,
+  symbols
+} from "@/lib/symbols";
 
 const STORAGE_KEY = "patch-notation-tool-state-v1";
 const NODE_WIDTH = 122;
@@ -23,6 +27,10 @@ const GRID_SIZE = 32;
 const MIN_SCALE = 0.45;
 const MAX_SCALE = 2.4;
 const DEFAULT_VIEW = { x: 120, y: 120, scale: 1 };
+const SYMBOL_EXPORT_SIZE = 62;
+const SYMBOL_EXPORT_OFFSET_X = 30;
+const SYMBOL_EXPORT_OFFSET_Y = 8;
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const cableColors = {
   sound: "#f6ba00",
@@ -42,19 +50,80 @@ const cableOptions = [
 
 const sampleState = {
   nodes: [
-    { id: "n1", symbolId: "keyboard-controller", x: 70, y: 420 },
-    { id: "n2", symbolId: "sawtooth-wave-oscillator", x: 80, y: 110 },
-    { id: "n3", symbolId: "low-pass-filter", x: 320, y: 120 },
-    { id: "n4", symbolId: "amplifier-vca", x: 550, y: 120 },
-    { id: "n5", symbolId: "eg-adsr", x: 320, y: 320 }
+    {
+      id: "sawtooth-wave-oscillator-1773450399854-d9p255",
+      symbolId: "sawtooth-wave-oscillator",
+      x: 160,
+      y: 416
+    },
+    {
+      id: "low-pass-filter-1773450415659-b0xn56",
+      symbolId: "low-pass-filter",
+      x: 384,
+      y: 416
+    },
+    {
+      id: "amplifier-vca-1773450421232-nggrxi",
+      symbolId: "amplifier-vca",
+      x: 608,
+      y: 416
+    },
+    {
+      id: "eg-adsr-1773450426855-2l2yok",
+      symbolId: "eg-adsr",
+      x: 384,
+      y: 256
+    },
+    {
+      id: "cv-gate-sequencer-1773450440837-vss5p4",
+      symbolId: "cv-gate-sequencer",
+      x: 160,
+      y: 96
+    }
   ],
   connections: [
-    { id: "c1", from: "n2", to: "n3", color: "sound" },
-    { id: "c2", from: "n3", to: "n4", color: "sound" },
-    { id: "c3", from: "n5", to: "n4", color: "modulation" },
-    { id: "c4", from: "n1", to: "n2", color: "pitch" },
-    { id: "c5", from: "n1", to: "n5", color: "gate" }
-  ]
+    {
+      id: "c-1773450457609-3jzs18",
+      from: "eg-adsr-1773450426855-2l2yok",
+      to: "low-pass-filter-1773450415659-b0xn56",
+      color: "modulation"
+    },
+    {
+      id: "c-1773450460630-9pc7z0",
+      from: "eg-adsr-1773450426855-2l2yok",
+      to: "amplifier-vca-1773450421232-nggrxi",
+      color: "modulation"
+    },
+    {
+      id: "c-1773450465626-6dr59z",
+      from: "cv-gate-sequencer-1773450440837-vss5p4",
+      to: "eg-adsr-1773450426855-2l2yok",
+      color: "gate"
+    },
+    {
+      id: "c-1773450473373-f7d64y",
+      from: "cv-gate-sequencer-1773450440837-vss5p4",
+      to: "sawtooth-wave-oscillator-1773450399854-d9p255",
+      color: "pitch"
+    },
+    {
+      id: "c-1773450477100-372v59",
+      from: "sawtooth-wave-oscillator-1773450399854-d9p255",
+      to: "low-pass-filter-1773450415659-b0xn56",
+      color: "sound"
+    },
+    {
+      id: "c-1773450480115-f8ls5b",
+      from: "low-pass-filter-1773450415659-b0xn56",
+      to: "amplifier-vca-1773450421232-nggrxi",
+      color: "sound"
+    }
+  ],
+  view: {
+    x: 58.94648656368099,
+    y: 7.130756415056965,
+    scale: 0.7315910831346416
+  }
 };
 
 const cableColorAliases = {
@@ -65,8 +134,34 @@ const cableColorAliases = {
 };
 
 function getConnectionPath(source, target) {
-  const dx = Math.max(100, Math.abs(target.x - source.x) * 0.45);
-  return `M ${source.x} ${source.y} C ${source.x + dx} ${source.y}, ${target.x - dx} ${target.y}, ${target.x} ${target.y}`;
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+
+  if (Math.abs(dy) > Math.abs(dx)) {
+    const handle = Math.max(80, Math.abs(dy) * 0.45);
+    return `M ${source.x} ${source.y} C ${source.x} ${source.y + handle}, ${target.x} ${target.y - handle}, ${target.x} ${target.y}`;
+  }
+
+  const handle = Math.max(100, Math.abs(dx) * 0.45);
+  return `M ${source.x} ${source.y} C ${source.x + handle} ${source.y}, ${target.x - handle} ${target.y}, ${target.x} ${target.y}`;
+}
+
+function getCableAxis(color) {
+  return color === "sound" ? "horizontal" : "vertical";
+}
+
+function getAnchorKeysForColor(color) {
+  if (getCableAxis(color) === "horizontal") {
+    return {
+      output: "right",
+      input: "left"
+    };
+  }
+
+  return {
+    output: "bottom",
+    input: "top"
+  };
 }
 
 function createNode(symbolId, x, y) {
@@ -85,6 +180,25 @@ function escapeXml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
+}
+
+const symbolDataUriCache = new Map();
+
+async function getSymbolDataUri(symbolId) {
+  if (symbolDataUriCache.has(symbolId)) {
+    return symbolDataUriCache.get(symbolId);
+  }
+
+  const assetPath = getSymbolAssetPath(symbolId, basePath);
+  const response = await fetch(assetPath);
+  if (!response.ok) {
+    throw new Error(`Could not load symbol asset: ${symbolId}`);
+  }
+
+  const markup = await response.text();
+  const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+  symbolDataUriCache.set(symbolId, dataUri);
+  return dataUri;
 }
 
 export default function PatchEditor() {
@@ -107,7 +221,7 @@ export default function PatchEditor() {
   const [cableColor, setCableColor] = useState("modulation");
   const [paletteDrag, setPaletteDrag] = useState(null);
   const [cablePreview, setCablePreview] = useState(null);
-  const [view, setView] = useState(DEFAULT_VIEW);
+  const [view, setView] = useState(sampleState.view || DEFAULT_VIEW);
   const [isPanning, setIsPanning] = useState(false);
   const [selectionBox, setSelectionBox] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -246,12 +360,20 @@ export default function PatchEditor() {
     };
   }
 
-  function buildPatchSvgMarkup() {
+  async function buildPatchSvgMarkup() {
     const bounds = getExportBounds();
+    const symbolEntries = await Promise.all(
+      [...new Set(nodes.map((node) => node.symbolId))].map(async (symbolId) => [
+        symbolId,
+        await getSymbolDataUri(symbolId)
+      ])
+    );
+    const symbolDataUris = Object.fromEntries(symbolEntries);
     const connectionMarkup = connections
       .map((connection) => {
-        const source = nodePositions[connection.from]?.output;
-        const target = nodePositions[connection.to]?.input;
+        const anchorKeys = getAnchorKeysForColor(connection.color);
+        const source = nodePositions[connection.from]?.[anchorKeys.output];
+        const target = nodePositions[connection.to]?.[anchorKeys.input];
         if (!source || !target) {
           return "";
         }
@@ -267,20 +389,22 @@ export default function PatchEditor() {
           return "";
         }
 
-        const iconX = node.x + 30;
-        const iconY = node.y + 8;
+        const iconX = node.x + SYMBOL_EXPORT_OFFSET_X;
+        const iconY = node.y + SYMBOL_EXPORT_OFFSET_Y;
         const labelY = node.y + 92;
-        const innerMarkup = buildSymbolInnerMarkup(symbol).replaceAll(
-          `fadeWave-${symbol.id}`,
-          `fadeWave-${symbol.id}-${node.id}`
-        );
+        const assetUri = symbolDataUris[node.symbolId];
+        if (!assetUri) {
+          return "";
+        }
 
         return `
           <g>
             <rect x="${node.x}" y="${node.y}" width="${NODE_WIDTH}" height="${NODE_HEIGHT}" rx="18" fill="#f8f4ec" fill-opacity="0.95" stroke="#231d1f" stroke-opacity="0.16" />
-            <g transform="translate(${iconX}, ${iconY}) scale(0.62)">
-              ${innerMarkup}
-            </g>
+            <circle cx="${node.x}" cy="${node.y + 44}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH}" cy="${node.y + 44}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
+            <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y + NODE_HEIGHT}" r="7" fill="#231d1f" stroke="#faf7f0" stroke-width="2" />
+            <image x="${iconX}" y="${iconY}" width="${SYMBOL_EXPORT_SIZE}" height="${SYMBOL_EXPORT_SIZE}" href="${assetUri}" preserveAspectRatio="xMidYMid meet" />
             <text x="${node.x + NODE_WIDTH / 2}" y="${labelY}" text-anchor="middle" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
               ${escapeXml(symbol.label)}
             </text>
@@ -319,51 +443,59 @@ export default function PatchEditor() {
     URL.revokeObjectURL(url);
   }
 
-  function handleExportSvg() {
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const svg = buildPatchSvgMarkup();
-    downloadBlob(
-      new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
-      `patch-${stamp}.svg`
-    );
+  async function handleExportSvg() {
+    try {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const svg = await buildPatchSvgMarkup();
+      downloadBlob(
+        new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+        `patch-${stamp}.svg`
+      );
+    } catch {
+      window.alert("Could not export SVG.");
+    }
   }
 
-  function handleExportPng() {
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const svg = buildPatchSvgMarkup();
-    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
+  async function handleExportPng() {
+    try {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const svg = await buildPatchSvgMarkup();
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const image = new Image();
 
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        URL.revokeObjectURL(url);
-        window.alert("Could not create PNG export.");
-        return;
-      }
-
-      context.drawImage(image, 0, 0);
-      canvas.toBlob((pngBlob) => {
-        URL.revokeObjectURL(url);
-        if (!pngBlob) {
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          URL.revokeObjectURL(url);
           window.alert("Could not create PNG export.");
           return;
         }
 
-        downloadBlob(pngBlob, `patch-${stamp}.png`);
-      }, "image/png");
-    };
+        context.drawImage(image, 0, 0);
+        canvas.toBlob((pngBlob) => {
+          URL.revokeObjectURL(url);
+          if (!pngBlob) {
+            window.alert("Could not create PNG export.");
+            return;
+          }
 
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      window.alert("Could not render PNG export.");
-    };
+          downloadBlob(pngBlob, `patch-${stamp}.png`);
+        }, "image/png");
+      };
 
-    image.src = url;
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        window.alert("Could not render PNG export.");
+      };
+
+      image.src = url;
+    } catch {
+      window.alert("Could not export PNG.");
+    }
   }
 
   function normalizePatchState(state) {
@@ -421,8 +553,10 @@ export default function PatchEditor() {
         nodes.map((node) => [
           node.id,
           {
-            input: { x: node.x, y: node.y + 44 },
-            output: { x: node.x + NODE_WIDTH, y: node.y + 44 }
+            left: { x: node.x, y: node.y + 44 },
+            right: { x: node.x + NODE_WIDTH, y: node.y + 44 },
+            top: { x: node.x + NODE_WIDTH / 2, y: node.y },
+            bottom: { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT }
           }
         ])
       ),
@@ -771,11 +905,12 @@ export default function PatchEditor() {
   function handleAnchorPointerDown(event, nodeId, anchorType) {
     event.stopPropagation();
 
-    if (anchorType !== "output") {
+    const expected = getAnchorKeysForColor(cableColor);
+    if (anchorType !== `output-${expected.output}`) {
       return;
     }
 
-    const from = nodePositions[nodeId]?.output;
+    const from = nodePositions[nodeId]?.[expected.output];
     if (!from) {
       return;
     }
@@ -798,7 +933,12 @@ export default function PatchEditor() {
     event.stopPropagation();
 
     const activeCable = cableDragRef.current;
-    if (!activeCable || anchorType !== "input") {
+    if (!activeCable) {
+      return;
+    }
+
+    const expected = getAnchorKeysForColor(activeCable.color);
+    if (anchorType !== `input-${expected.input}`) {
       return;
     }
 
@@ -975,7 +1115,7 @@ export default function PatchEditor() {
   function resetToSample() {
     setNodes(sampleState.nodes);
     setConnections(sampleState.connections);
-    setView(DEFAULT_VIEW);
+    setView(sampleState.view || DEFAULT_VIEW);
     setSelectedNodeIds([]);
     setSelectedConnectionId(null);
     setCablePreview(null);
@@ -1271,8 +1411,9 @@ export default function PatchEditor() {
             >
               <svg className="canvas-overlay" width={STAGE_WIDTH} height={STAGE_HEIGHT}>
                 {connections.map((connection) => {
-                  const source = nodePositions[connection.from]?.output;
-                  const target = nodePositions[connection.to]?.input;
+                  const anchorKeys = getAnchorKeysForColor(connection.color);
+                  const source = nodePositions[connection.from]?.[anchorKeys.output];
+                  const target = nodePositions[connection.to]?.[anchorKeys.input];
                   if (!source || !target) {
                     return null;
                   }
@@ -1321,19 +1462,36 @@ export default function PatchEditor() {
                     style={{ left: node.x, top: node.y }}
                     onPointerDown={(event) => handleNodePointerDown(event, node.id)}
                   >
-                    <button
-                      className="anchor input"
-                      title="Input anchor"
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onPointerUp={(event) => handleAnchorPointerUp(event, node.id, "input")}
-                    />
-                    <button
-                      className="anchor output"
-                      title="Output anchor"
-                      onPointerDown={(event) =>
-                        handleAnchorPointerDown(event, node.id, "output")
-                      }
-                    />
+                  <button
+                    className="anchor input left"
+                    title="Left input anchor"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerUp={(event) =>
+                      handleAnchorPointerUp(event, node.id, "input-left")
+                    }
+                  />
+                  <button
+                    className="anchor output right"
+                    title="Right output anchor"
+                    onPointerDown={(event) =>
+                      handleAnchorPointerDown(event, node.id, "output-right")
+                    }
+                  />
+                  <button
+                    className="anchor input top"
+                    title="Top input anchor"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerUp={(event) =>
+                      handleAnchorPointerUp(event, node.id, "input-top")
+                    }
+                  />
+                  <button
+                    className="anchor output bottom"
+                    title="Bottom output anchor"
+                    onPointerDown={(event) =>
+                      handleAnchorPointerDown(event, node.id, "output-bottom")
+                    }
+                  />
                     <div className="node-icon">
                       <SymbolIcon symbol={symbol} size={62} />
                     </div>

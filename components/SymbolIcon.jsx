@@ -1,14 +1,16 @@
-import { buildSymbolInnerMarkup } from "@/lib/symbolPrimitives";
+import { getSymbolAssetPath } from "@/lib/symbols";
+
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default function SymbolIcon({ symbol, size = 72 }) {
   return (
-    <svg
-      viewBox="0 0 100 100"
+    <img
+      src={getSymbolAssetPath(symbol.id, basePath)}
       width={size}
       height={size}
-      aria-label={symbol.label}
-      role="img"
-      dangerouslySetInnerHTML={{ __html: buildSymbolInnerMarkup(symbol) }}
+      alt={symbol.label}
+      className="symbol-icon-image"
+      draggable="false"
     />
   );
 }

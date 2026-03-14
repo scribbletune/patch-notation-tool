@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "generate:symbols": "node scripts/generate-symbol-svgs.mjs"
+    "start": "next start"
   },
   "dependencies": {
     "next": "15.2.2",

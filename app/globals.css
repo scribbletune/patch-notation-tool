@@ -378,6 +378,37 @@ button {
   box-shadow: 0 0 0 2px rgba(29, 26, 28, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
+.anchor.left {
+  left: -9px;
+  right: auto;
+  top: 50%;
+  margin-top: -9px;
+}
+
+.anchor.right {
+  right: -9px;
+  left: auto;
+  top: 50%;
+  margin-top: -9px;
+}
+
+.anchor.top {
+  left: 50%;
+  right: auto;
+  top: -9px;
+  margin-top: 0;
+  margin-left: -9px;
+}
+
+.anchor.bottom {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: -9px;
+  margin-top: 0;
+  margin-left: -9px;
+}
+
 .anchor:hover {
   opacity: 1;
   transform: scale(1.08);

@@ -4,7 +4,7 @@ Next.js app for building Eurorack and VCV Rack patch diagrams with PATCH & TWEAK
 
 ## What is included
 
-- `91` individual SVG symbol exports in [`public/symbols`](/Users/walmik/Github/pnt/public/symbols)
+- `91` SVG symbol assets loaded directly from [`public/symbols`](/Users/walmik/Github/pnt/public/symbols)
 - A drag-and-drop patch canvas with pan, zoom, fit-to-content, and grid snapping
 - Cable drawing with sound, modulation, gate/trigger, clock, and pitch cable colors
 - IndexedDB-backed local patch library plus JSON import/export
@@ -14,20 +14,19 @@ Next.js app for building Eurorack and VCV Rack patch diagrams with PATCH & TWEAK
 
 ```bash
 npm install
-npm run generate:symbols
 npm run dev
 ```
 
 ## Important files
 
 - [`components/PatchEditor.jsx`](/Users/walmik/Github/pnt/components/PatchEditor.jsx)
+- [`components/SymbolIcon.jsx`](/Users/walmik/Github/pnt/components/SymbolIcon.jsx)
 - [`lib/symbols.js`](/Users/walmik/Github/pnt/lib/symbols.js)
-- [`lib/symbolPrimitives.js`](/Users/walmik/Github/pnt/lib/symbolPrimitives.js)
-- [`scripts/generate-symbol-svgs.mjs`](/Users/walmik/Github/pnt/scripts/generate-symbol-svgs.mjs)
+- [`public/symbols`](/Users/walmik/Github/pnt/public/symbols)
 
 ## Reference
 
-Symbol categories and naming were based on the Patch & Tweak symbol reference page and the source sheets from your Desktop images.
+The app expects PATCH & TWEAK SVG files to live in [`public/symbols`](/Users/walmik/Github/pnt/public/symbols) using the symbol ids from [`lib/symbols.js`](/Users/walmik/Github/pnt/lib/symbols.js) as filenames.
 
 ## Credits
 
