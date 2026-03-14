@@ -237,6 +237,28 @@ button {
   padding: 10px 14px;
 }
 
+.toolbar-icon-button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+
+.toolbar-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
 .toolbar button.active {
   background: var(--ink);
   color: white;
@@ -244,6 +266,11 @@ button {
 
 .toolbar .danger {
   color: #9b1e23;
+}
+
+.toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .toolbar-note {
@@ -483,6 +510,10 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.button-row.icon-row {
+  flex-wrap: nowrap;
 }
 
 .button-row.compact button {

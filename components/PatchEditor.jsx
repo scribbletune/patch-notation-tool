@@ -183,6 +183,21 @@ function escapeXml(value) {
     .replaceAll("'", "&apos;");
 }
 
+function ToolbarIcon({ children }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+      className="toolbar-icon"
+    >
+      {children}
+    </svg>
+  );
+}
+
 const symbolDataUriCache = new Map();
 
 async function getSymbolDataUri(symbolId) {
@@ -1272,23 +1287,130 @@ export default function PatchEditor() {
                 className="hidden-file-input"
                 onChange={handlePatchFileChange}
               />
-              <div className="button-row">
-                <button className="primary-button" onClick={() => savePatch(false)}>
-                  Save
-                </button>
-                <button onClick={() => savePatch(true)}>Save As</button>
+              <div className="button-row icon-row">
                 <button
+                  className="primary-button toolbar-icon-button"
+                  onClick={() => savePatch(false)}
+                  title="Save patch"
+                  aria-label="Save patch"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M6 4h10l3 3v13H5V4z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 4v5h6V4M9 16h6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={() => savePatch(true)}
+                  title="Save patch as"
+                  aria-label="Save patch as"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M6 4h10l3 3v13H5V4z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 4v5h6V4M12 13v5M9.5 15.5 12 18l2.5-2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
                   onClick={() => {
                     setLibraryOpen((current) => !current);
                     refreshStoredPatches();
                   }}
+                  title="Open patch library"
+                  aria-label="Open patch library"
                 >
-                  Open
+                  <ToolbarIcon>
+                    <path
+                      d="M4 7h6l2 2h8v9H4z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M4 7V5h6l2 2"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
                 </button>
-              </div>
-              <div className="button-row compact">
-                <button onClick={exportPatchJson}>Export JSON</button>
-                <button onClick={openPatchPicker}>Import JSON</button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={exportPatchJson}
+                  title="Export JSON"
+                  aria-label="Export JSON"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M8 4h6l4 4v12H8z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 4v4h4M10 14h4M10 17h6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={openPatchPicker}
+                  title="Import JSON"
+                  aria-label="Import JSON"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M8 4h6l4 4v12H8z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 4v4h4M12 18V12M9.5 14.5 12 12l2.5 2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
               </div>
               {libraryOpen ? (
                 <div className="patch-library">
@@ -1322,32 +1444,175 @@ export default function PatchEditor() {
         <section className="panel workspace">
           <div className="toolbar">
             <div className="zoom-controls">
-              <button onClick={() => handleZoomStep(-1)} type="button">
+              <button
+                className="toolbar-icon-button"
+                onClick={() => handleZoomStep(-1)}
+                type="button"
+                title="Zoom out"
+                aria-label="Zoom out"
+              >
                 -
               </button>
               <span className="zoom-readout">{Math.round(view.scale * 100)}%</span>
-              <button onClick={() => handleZoomStep(1)} type="button">
+              <button
+                className="toolbar-icon-button"
+                onClick={() => handleZoomStep(1)}
+                type="button"
+                title="Zoom in"
+                aria-label="Zoom in"
+              >
                 +
               </button>
-              <button onClick={handleResetView} type="button">
-                Reset view
+              <button
+                className="toolbar-icon-button"
+                onClick={handleResetView}
+                type="button"
+                title="Reset view"
+                aria-label="Reset view"
+              >
+                <ToolbarIcon>
+                  <path
+                    d="M12 5a7 7 0 1 1-6.2 3.75"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M5 5v4h4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </ToolbarIcon>
               </button>
-              <button onClick={handleFitToContent} type="button">
-                Fit to content
+              <button
+                className="toolbar-icon-button"
+                onClick={handleFitToContent}
+                type="button"
+                title="Fit to content"
+                aria-label="Fit to content"
+              >
+                <ToolbarIcon>
+                  <path
+                    d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </ToolbarIcon>
               </button>
-              <button onClick={handleExportSvg} type="button">
-                Export SVG
+              <button
+                className="toolbar-icon-button"
+                onClick={handleExportSvg}
+                type="button"
+                title="Export SVG"
+                aria-label="Export SVG"
+              >
+                <ToolbarIcon>
+                  <path
+                    d="M8 4h6l4 4v12H8z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M14 4v4h4M12 11v6M9.5 14.5 12 17l2.5-2.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </ToolbarIcon>
               </button>
-              <button onClick={handleExportPng} type="button">
-                Export PNG
+              <button
+                className="toolbar-icon-button"
+                onClick={handleExportPng}
+                type="button"
+                title="Export PNG"
+                aria-label="Export PNG"
+              >
+                <ToolbarIcon>
+                  <rect
+                    x="4"
+                    y="5"
+                    width="16"
+                    height="14"
+                    rx="2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+                  <path
+                    d="m7 16 3-3 2.5 2 3.5-4 2 5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </ToolbarIcon>
               </button>
             </div>
 
-            <button onClick={resetToSample}>Load sample patch</button>
-            <button onClick={clearCanvas} className="danger">
-              Clear canvas
+            <button
+              className="toolbar-icon-button"
+              onClick={resetToSample}
+              title="Load sample patch"
+              aria-label="Load sample patch"
+            >
+              <ToolbarIcon>
+                <path
+                  d="M7 5h8l3 3v11H7z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M15 5v3h3M10 12h5M10 15h5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </ToolbarIcon>
             </button>
             <button
+              className="toolbar-icon-button danger"
+              onClick={clearCanvas}
+              title="Clear canvas"
+              aria-label="Clear canvas"
+            >
+              <ToolbarIcon>
+                <path
+                  d="M5 17h10M15 17l3-8M9 17l3-8M10 7h9"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M14 5h3l2 2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </ToolbarIcon>
+            </button>
+            <button
+              className="toolbar-icon-button danger"
               disabled={selectedNodeIds.length === 0 && !selectedConnectionId}
               onClick={() => {
                 if (selectedNodeIds.length > 0) {
@@ -1356,8 +1621,26 @@ export default function PatchEditor() {
                   removeConnection(selectedConnectionId);
                 }
               }}
+              title="Delete selected"
+              aria-label="Delete selected"
             >
-              Delete selected
+              <ToolbarIcon>
+                <path
+                  d="M5 7h14M9 7V5h6v2M8 7l1 12h6l1-12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M10 10v6M14 10v6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </ToolbarIcon>
             </button>
 
             <span className="toolbar-note">
