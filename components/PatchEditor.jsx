@@ -17,6 +17,7 @@ import {
 } from "@/lib/symbols";
 
 const STORAGE_KEY = "patch-notation-tool-state-v1";
+const THEME_PREFERENCE_KEY = "patch-notation-tool-theme";
 const NODE_WIDTH = 122;
 const NODE_HEIGHT = 104;
 const PALETTE_DRAG_HOTSPOT_X = 78;
@@ -51,6 +52,8 @@ const cableOptions = [
 ];
 const SELECT_TOOL_ID = "select";
 const TEXT_TOOL_ID = "text";
+const THEME_LIGHT = "light";
+const THEME_DARK = "dark";
 
 const toolDescriptions = {
   [SELECT_TOOL_ID]:
@@ -72,78 +75,90 @@ const toolDescriptions = {
 const sampleState = {
   nodes: [
     {
-      id: "sawtooth-wave-oscillator-1773450399854-d9p255",
+      id: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
       symbolId: "sawtooth-wave-oscillator",
-      x: 160,
-      y: 416
+      x: 96,
+      y: 64,
+      note: "",
+      portNotes: {}
     },
     {
-      id: "low-pass-filter-1773450415659-b0xn56",
+      id: "low-pass-filter-1773458836296-c82zwe",
       symbolId: "low-pass-filter",
-      x: 384,
-      y: 416
+      x: 288,
+      y: 64,
+      note: "",
+      portNotes: {}
     },
     {
-      id: "amplifier-vca-1773450421232-nggrxi",
-      symbolId: "amplifier-vca",
-      x: 608,
-      y: 416
-    },
-    {
-      id: "eg-adsr-1773450426855-2l2yok",
+      id: "eg-adsr-1773458851950-b3zck9",
       symbolId: "eg-adsr",
-      x: 384,
-      y: 256
+      x: 288,
+      y: 224,
+      note: "",
+      portNotes: {
+        top: "same ADSR to filter and vca"
+      }
     },
     {
-      id: "cv-gate-sequencer-1773450440837-vss5p4",
+      id: "amplifier-vca-1773458857274-fq37nq",
+      symbolId: "amplifier-vca",
+      x: 480,
+      y: 64,
+      note: "",
+      portNotes: {}
+    },
+    {
+      id: "cv-gate-sequencer-1773458868277-8mhf34",
       symbolId: "cv-gate-sequencer",
-      x: 160,
-      y: 96
+      x: 96,
+      y: 416,
+      note: "keyboard or a sequencer",
+      portNotes: {}
     }
   ],
   connections: [
     {
-      id: "c-1773450457609-3jzs18",
-      from: "eg-adsr-1773450426855-2l2yok",
-      to: "low-pass-filter-1773450415659-b0xn56",
+      id: "c-1773458884193-e7s0ph",
+      from: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
+      to: "low-pass-filter-1773458836296-c82zwe",
+      color: "sound"
+    },
+    {
+      id: "c-1773458886383-ohwo9g",
+      from: "low-pass-filter-1773458836296-c82zwe",
+      to: "amplifier-vca-1773458857274-fq37nq",
+      color: "sound"
+    },
+    {
+      id: "c-1773458891873-m806jc",
+      from: "eg-adsr-1773458851950-b3zck9",
+      to: "amplifier-vca-1773458857274-fq37nq",
       color: "modulation"
     },
     {
-      id: "c-1773450460630-9pc7z0",
-      from: "eg-adsr-1773450426855-2l2yok",
-      to: "amplifier-vca-1773450421232-nggrxi",
+      id: "c-1773458894365-5b0p0f",
+      from: "eg-adsr-1773458851950-b3zck9",
+      to: "low-pass-filter-1773458836296-c82zwe",
       color: "modulation"
     },
     {
-      id: "c-1773450465626-6dr59z",
-      from: "cv-gate-sequencer-1773450440837-vss5p4",
-      to: "eg-adsr-1773450426855-2l2yok",
+      id: "c-1773458911112-haag4r",
+      from: "cv-gate-sequencer-1773458868277-8mhf34",
+      to: "eg-adsr-1773458851950-b3zck9",
       color: "gate"
     },
     {
-      id: "c-1773450473373-f7d64y",
-      from: "cv-gate-sequencer-1773450440837-vss5p4",
-      to: "sawtooth-wave-oscillator-1773450399854-d9p255",
+      id: "c-1773458922805-5mme1x",
+      from: "cv-gate-sequencer-1773458868277-8mhf34",
+      to: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
       color: "pitch"
-    },
-    {
-      id: "c-1773450477100-372v59",
-      from: "sawtooth-wave-oscillator-1773450399854-d9p255",
-      to: "low-pass-filter-1773450415659-b0xn56",
-      color: "sound"
-    },
-    {
-      id: "c-1773450480115-f8ls5b",
-      from: "low-pass-filter-1773450415659-b0xn56",
-      to: "amplifier-vca-1773450421232-nggrxi",
-      color: "sound"
     }
   ],
   view: {
-    x: 58.94648656368099,
-    y: 7.130756415056965,
-    scale: 0.7315910831346416
+    x: 37.8203125,
+    y: 10.9921875,
+    scale: 1
   }
 };
 
@@ -282,6 +297,7 @@ export default function PatchEditor() {
   const [currentPatchId, setCurrentPatchId] = useState(null);
   const [currentPatchName, setCurrentPatchName] = useState("Untitled patch");
   const [libraryMessage, setLibraryMessage] = useState("");
+  const [themePreference, setThemePreference] = useState(THEME_LIGHT);
   const activeToolDescription =
     activeTool === "cable"
       ? toolDescriptions[cableColor]
@@ -663,6 +679,32 @@ export default function PatchEditor() {
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem(THEME_PREFERENCE_KEY);
+    if (storedTheme === THEME_LIGHT || storedTheme === THEME_DARK) {
+      setThemePreference(storedTheme);
+      return;
+    }
+
+    setThemePreference(
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? THEME_DARK
+        : THEME_LIGHT
+    );
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("theme-dark", themePreference === THEME_DARK);
+    root.classList.toggle("theme-light", themePreference === THEME_LIGHT);
+    root.style.colorScheme = themePreference;
+    window.localStorage.setItem(THEME_PREFERENCE_KEY, themePreference);
+
+    return () => {
+      root.classList.remove("theme-dark", "theme-light");
+    };
+  }, [themePreference]);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -1599,43 +1641,142 @@ export default function PatchEditor() {
 
         <section className="panel workspace">
           <div className="toolbar">
-            <div className="zoom-controls">
+            <div className="toolbar-row">
+              <div className="zoom-controls">
+                <button
+                  className="toolbar-icon-button"
+                  onClick={() => handleZoomStep(-1)}
+                  type="button"
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                >
+                  -
+                </button>
+                <span className="zoom-readout">{Math.round(view.scale * 100)}%</span>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={() => handleZoomStep(1)}
+                  type="button"
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={handleResetView}
+                  type="button"
+                  title="Reset view"
+                  aria-label="Reset view"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M12 5a7 7 0 1 1-6.2 3.75"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M5 5v4h4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={handleFitToContent}
+                  type="button"
+                  title="Fit to content"
+                  aria-label="Fit to content"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={handleExportSvg}
+                  type="button"
+                  title="Export SVG"
+                  aria-label="Export SVG"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M8 4h6l4 4v12H8z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 4v4h4M12 11v6M9.5 14.5 12 17l2.5-2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={handleExportPng}
+                  type="button"
+                  title="Export PNG"
+                  aria-label="Export PNG"
+                >
+                  <ToolbarIcon>
+                    <rect
+                      x="4"
+                      y="5"
+                      width="16"
+                      height="14"
+                      rx="2"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+                    <path
+                      d="m7 16 3-3 2.5 2 3.5-4 2 5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                </button>
+              </div>
+
               <button
                 className="toolbar-icon-button"
-                onClick={() => handleZoomStep(-1)}
-                type="button"
-                title="Zoom out"
-                aria-label="Zoom out"
-              >
-                -
-              </button>
-              <span className="zoom-readout">{Math.round(view.scale * 100)}%</span>
-              <button
-                className="toolbar-icon-button"
-                onClick={() => handleZoomStep(1)}
-                type="button"
-                title="Zoom in"
-                aria-label="Zoom in"
-              >
-                +
-              </button>
-              <button
-                className="toolbar-icon-button"
-                onClick={handleResetView}
-                type="button"
-                title="Reset view"
-                aria-label="Reset view"
+                onClick={resetToSample}
+                title="Load sample patch"
+                aria-label="Load sample patch"
               >
                 <ToolbarIcon>
                   <path
-                    d="M12 5a7 7 0 1 1-6.2 3.75"
+                    d="M7 5h8l3 3v11H7z"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                   <path
-                    d="M5 5v4h4"
+                    d="M15 5v3h3M10 12h5M10 15h5"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -1645,15 +1786,22 @@ export default function PatchEditor() {
                 </ToolbarIcon>
               </button>
               <button
-                className="toolbar-icon-button"
-                onClick={handleFitToContent}
-                type="button"
-                title="Fit to content"
-                aria-label="Fit to content"
+                className="toolbar-icon-button danger"
+                onClick={clearCanvas}
+                title="Clear canvas"
+                aria-label="Clear canvas"
               >
                 <ToolbarIcon>
                   <path
-                    d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5"
+                    d="M5 17h10M15 17l3-8M9 17l3-8M10 7h9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M14 5h3l2 2"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -1663,142 +1811,79 @@ export default function PatchEditor() {
                 </ToolbarIcon>
               </button>
               <button
-                className="toolbar-icon-button"
-                onClick={handleExportSvg}
-                type="button"
-                title="Export SVG"
-                aria-label="Export SVG"
+                className="toolbar-icon-button danger"
+                disabled={selectedNodeIds.length === 0 && !selectedConnectionId}
+                onClick={() => {
+                  if (selectedNodeIds.length > 0) {
+                    removeNodes(selectedNodeIds);
+                  } else if (selectedConnectionId) {
+                    removeConnection(selectedConnectionId);
+                  }
+                }}
+                title="Delete selected"
+                aria-label="Delete selected"
               >
                 <ToolbarIcon>
                   <path
-                    d="M8 4h6l4 4v12H8z"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M14 4v4h4M12 11v6M9.5 14.5 12 17l2.5-2.5"
+                    d="M5 7h14M9 7V5h6v2M8 7l1 12h6l1-12"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                  />
+                  <path
+                    d="M10 10v6M14 10v6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                   />
                 </ToolbarIcon>
               </button>
+              <span className="toolbar-spacer" />
               <button
                 className="toolbar-icon-button"
-                onClick={handleExportPng}
+                onClick={() =>
+                  setThemePreference((current) =>
+                    current === THEME_DARK ? THEME_LIGHT : THEME_DARK
+                  )
+                }
+                title={themePreference === THEME_DARK ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={themePreference === THEME_DARK ? "Switch to light mode" : "Switch to dark mode"}
                 type="button"
-                title="Export PNG"
-                aria-label="Export PNG"
               >
-                <ToolbarIcon>
-                  <rect
-                    x="4"
-                    y="5"
-                    width="16"
-                    height="14"
-                    rx="2"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <circle cx="9" cy="10" r="1.5" fill="currentColor" />
-                  <path
-                    d="m7 16 3-3 2.5 2 3.5-4 2 5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </ToolbarIcon>
+                {themePreference === THEME_DARK ? (
+                  <ToolbarIcon>
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </ToolbarIcon>
+                ) : (
+                  <ToolbarIcon>
+                    <path
+                      d="M18 14.5A7.5 7.5 0 0 1 9.5 6a7 7 0 1 0 8.5 8.5Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                  </ToolbarIcon>
+                )}
               </button>
             </div>
-
-            <button
-              className="toolbar-icon-button"
-              onClick={resetToSample}
-              title="Load sample patch"
-              aria-label="Load sample patch"
-            >
-              <ToolbarIcon>
-                <path
-                  d="M7 5h8l3 3v11H7z"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M15 5v3h3M10 12h5M10 15h5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </ToolbarIcon>
-            </button>
-            <button
-              className="toolbar-icon-button danger"
-              onClick={clearCanvas}
-              title="Clear canvas"
-              aria-label="Clear canvas"
-            >
-              <ToolbarIcon>
-                <path
-                  d="M5 17h10M15 17l3-8M9 17l3-8M10 7h9"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M14 5h3l2 2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </ToolbarIcon>
-            </button>
-            <button
-              className="toolbar-icon-button danger"
-              disabled={selectedNodeIds.length === 0 && !selectedConnectionId}
-              onClick={() => {
-                if (selectedNodeIds.length > 0) {
-                  removeNodes(selectedNodeIds);
-                } else if (selectedConnectionId) {
-                  removeConnection(selectedConnectionId);
-                }
-              }}
-              title="Delete selected"
-              aria-label="Delete selected"
-            >
-              <ToolbarIcon>
-                <path
-                  d="M5 7h14M9 7V5h6v2M8 7l1 12h6l1-12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M10 10v6M14 10v6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </ToolbarIcon>
-            </button>
-
             <span className="toolbar-note">
               Use Select for moving, a cable color for patching, and Text for
               annotations. Middle-drag or Cmd/Ctrl-drag pans.
