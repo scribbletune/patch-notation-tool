@@ -7,13 +7,19 @@ import {
   deleteStoredPatch,
   getStoredPatch,
   listStoredPatches,
-  saveStoredPatch
+  saveStoredPatch,
 } from "@/lib/patchLibrary";
+import {
+  deleteCustomModule,
+  listCustomModules,
+  renameCustomModule,
+  saveCustomModule,
+} from "@/lib/customModuleLibrary";
 import {
   getSymbolAssetPath,
   symbolCategories,
   symbolMap,
-  symbols
+  symbols,
 } from "@/lib/symbols";
 
 const STORAGE_KEY = "patch-notation-tool-state-v1";
@@ -40,7 +46,7 @@ const cableColors = {
   modulation: "#0b88d8",
   gate: "#d8171f",
   pitch: "#7d94a5",
-  clock: "#2f9e44"
+  clock: "#2f9e44",
 };
 
 const cableOptions = [
@@ -48,7 +54,7 @@ const cableOptions = [
   { id: "modulation", label: "modulation" },
   { id: "gate", label: "gate / trigger" },
   { id: "clock", label: "clock" },
-  { id: "pitch", label: "pitch" }
+  { id: "pitch", label: "pitch" },
 ];
 const SELECT_TOOL_ID = "select";
 const TEXT_TOOL_ID = "text";
@@ -64,12 +70,11 @@ const toolDescriptions = {
     "Audio cable. Connects horizontally from the right output of one symbol to the left input of another.",
   modulation:
     "Modulation cable. Connects vertically from the top output of one symbol to the bottom input of another.",
-  gate:
-    "Gate / trigger cable. Use for triggers and gates; it connects vertically from top output to bottom input.",
+  gate: "Gate / trigger cable. Use for triggers and gates; it connects vertically from top output to bottom input.",
   clock:
     "Clock cable. Use for clock and timing signals; it connects vertically from top output to bottom input.",
   pitch:
-    "Pitch cable. Use for pitch CV; it connects vertically from top output to bottom input."
+    "Pitch cable. Use for pitch CV; it connects vertically from top output to bottom input.",
 };
 
 const sampleState = {
@@ -80,7 +85,7 @@ const sampleState = {
       x: 96,
       y: 64,
       note: "",
-      portNotes: {}
+      portNotes: {},
     },
     {
       id: "low-pass-filter-1773458836296-c82zwe",
@@ -88,7 +93,7 @@ const sampleState = {
       x: 288,
       y: 64,
       note: "",
-      portNotes: {}
+      portNotes: {},
     },
     {
       id: "eg-adsr-1773458851950-b3zck9",
@@ -97,8 +102,8 @@ const sampleState = {
       y: 224,
       note: "",
       portNotes: {
-        top: "same ADSR to filter and vca"
-      }
+        top: "same ADSR to filter and vca",
+      },
     },
     {
       id: "amplifier-vca-1773458857274-fq37nq",
@@ -106,7 +111,7 @@ const sampleState = {
       x: 480,
       y: 64,
       note: "",
-      portNotes: {}
+      portNotes: {},
     },
     {
       id: "cv-gate-sequencer-1773458868277-8mhf34",
@@ -114,59 +119,59 @@ const sampleState = {
       x: 96,
       y: 416,
       note: "keyboard or a sequencer",
-      portNotes: {}
-    }
+      portNotes: {},
+    },
   ],
   connections: [
     {
       id: "c-1773458884193-e7s0ph",
       from: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
       to: "low-pass-filter-1773458836296-c82zwe",
-      color: "sound"
+      color: "sound",
     },
     {
       id: "c-1773458886383-ohwo9g",
       from: "low-pass-filter-1773458836296-c82zwe",
       to: "amplifier-vca-1773458857274-fq37nq",
-      color: "sound"
+      color: "sound",
     },
     {
       id: "c-1773458891873-m806jc",
       from: "eg-adsr-1773458851950-b3zck9",
       to: "amplifier-vca-1773458857274-fq37nq",
-      color: "modulation"
+      color: "modulation",
     },
     {
       id: "c-1773458894365-5b0p0f",
       from: "eg-adsr-1773458851950-b3zck9",
       to: "low-pass-filter-1773458836296-c82zwe",
-      color: "modulation"
+      color: "modulation",
     },
     {
       id: "c-1773458911112-haag4r",
       from: "cv-gate-sequencer-1773458868277-8mhf34",
       to: "eg-adsr-1773458851950-b3zck9",
-      color: "gate"
+      color: "gate",
     },
     {
       id: "c-1773458922805-5mme1x",
       from: "cv-gate-sequencer-1773458868277-8mhf34",
       to: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
-      color: "pitch"
-    }
+      color: "pitch",
+    },
   ],
   view: {
     x: 37.8203125,
     y: 10.9921875,
-    scale: 1
-  }
+    scale: 1,
+  },
 };
 
 const cableColorAliases = {
   audio: "sound",
   cv: "modulation",
   mod: "gate",
-  neutral: "pitch"
+  neutral: "pitch",
 };
 
 function getConnectionPath(source, target) {
@@ -190,13 +195,13 @@ function getAnchorKeysForColor(color) {
   if (getCableAxis(color) === "horizontal") {
     return {
       output: "right",
-      input: "left"
+      input: "left",
     };
   }
 
   return {
     output: "top",
-    input: "bottom"
+    input: "bottom",
   };
 }
 
@@ -207,7 +212,7 @@ function createNode(symbolId, x, y) {
     x: Math.round(x),
     y: Math.round(y),
     note: "",
-    portNotes: {}
+    portNotes: {},
   };
 }
 
@@ -244,9 +249,14 @@ function normalizeNode(node) {
     portNotes:
       node.portNotes && typeof node.portNotes === "object"
         ? Object.fromEntries(
-            PORT_KEYS.map((key) => [key, typeof node.portNotes[key] === "string" ? node.portNotes[key] : ""])
+            PORT_KEYS.map((key) => [
+              key,
+              typeof node.portNotes[key] === "string"
+                ? node.portNotes[key]
+                : "",
+            ]),
           )
-        : {}
+        : {},
   };
 }
 
@@ -276,6 +286,7 @@ export default function PatchEditor() {
   const fileInputRef = useRef(null);
   const viewRef = useRef(DEFAULT_VIEW);
   const nodesRef = useRef(sampleState.nodes);
+  const customModulesRef = useRef([]);
   const suppressNodeClickRef = useRef(false);
 
   const [nodes, setNodes] = useState(sampleState.nodes);
@@ -293,6 +304,7 @@ export default function PatchEditor() {
   const [selectionBox, setSelectionBox] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [storedPatches, setStoredPatches] = useState([]);
+  const [customModules, setCustomModules] = useState([]);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [currentPatchId, setCurrentPatchId] = useState(null);
   const [currentPatchName, setCurrentPatchName] = useState("Untitled patch");
@@ -315,7 +327,7 @@ export default function PatchEditor() {
   function clampNodePosition(x, y) {
     return {
       x: Math.min(Math.max(12, x), STAGE_WIDTH - NODE_WIDTH - 12),
-      y: Math.min(Math.max(12, y), STAGE_HEIGHT - NODE_HEIGHT - 12)
+      y: Math.min(Math.max(12, y), STAGE_HEIGHT - NODE_HEIGHT - 12),
     };
   }
 
@@ -336,7 +348,7 @@ export default function PatchEditor() {
 
     return {
       x: (clientX - rect.left - currentView.x) / currentView.scale,
-      y: (clientY - rect.top - currentView.y) / currentView.scale
+      y: (clientY - rect.top - currentView.y) / currentView.scale,
     };
   }
 
@@ -357,7 +369,7 @@ export default function PatchEditor() {
     setView({
       x: clientX - rect.left - point.x * clampedScale,
       y: clientY - rect.top - point.y * clampedScale,
-      scale: clampedScale
+      scale: clampedScale,
     });
   }
 
@@ -391,8 +403,12 @@ export default function PatchEditor() {
     const padding = 120;
     const left = Math.min(...nodesRef.current.map((node) => node.x));
     const top = Math.min(...nodesRef.current.map((node) => node.y));
-    const right = Math.max(...nodesRef.current.map((node) => node.x + NODE_WIDTH));
-    const bottom = Math.max(...nodesRef.current.map((node) => node.y + NODE_HEIGHT));
+    const right = Math.max(
+      ...nodesRef.current.map((node) => node.x + NODE_WIDTH),
+    );
+    const bottom = Math.max(
+      ...nodesRef.current.map((node) => node.y + NODE_HEIGHT),
+    );
     const boundsWidth = right - left;
     const boundsHeight = bottom - top;
     const scaleX = (rect.width - padding * 2) / Math.max(boundsWidth, 1);
@@ -402,7 +418,7 @@ export default function PatchEditor() {
     setView({
       x: rect.width / 2 - ((left + right) / 2) * scale,
       y: rect.height / 2 - ((top + bottom) / 2) * scale,
-      scale
+      scale,
     });
   }
 
@@ -412,7 +428,7 @@ export default function PatchEditor() {
         left: 0,
         top: 0,
         width: 1200,
-        height: 800
+        height: 800,
       };
     }
 
@@ -420,28 +436,30 @@ export default function PatchEditor() {
     const left = Math.min(...nodesRef.current.map((node) => node.x)) - padding;
     const top = Math.min(...nodesRef.current.map((node) => node.y)) - padding;
     const right =
-      Math.max(...nodesRef.current.map((node) => node.x + NODE_WIDTH)) + padding;
+      Math.max(...nodesRef.current.map((node) => node.x + NODE_WIDTH)) +
+      padding;
     const bottom =
-      Math.max(...nodesRef.current.map((node) => node.y + NODE_HEIGHT)) + padding;
+      Math.max(...nodesRef.current.map((node) => node.y + NODE_HEIGHT)) +
+      padding;
 
     return {
       left: Math.max(0, left),
       top: Math.max(0, top),
       width: Math.min(STAGE_WIDTH, right) - Math.max(0, left),
-      height: Math.min(STAGE_HEIGHT, bottom) - Math.max(0, top)
+      height: Math.min(STAGE_HEIGHT, bottom) - Math.max(0, top),
     };
   }
 
   async function buildPatchSvgMarkup({
     includeBackground = true,
-    includeGrid = true
+    includeGrid = true,
   } = {}) {
     const bounds = getExportBounds();
     const symbolEntries = await Promise.all(
       [...new Set(nodes.map((node) => node.symbolId))].map(async (symbolId) => [
         symbolId,
-        await getSymbolDataUri(symbolId)
-      ])
+        await getSymbolDataUri(symbolId),
+      ]),
     );
     const symbolDataUris = Object.fromEntries(symbolEntries);
     const connectionMarkup = connections
@@ -495,7 +513,7 @@ export default function PatchEditor() {
             top: { x: anchor.x + 10, y: anchor.y - 12 },
             right: { x: anchor.x + 14, y: anchor.y + 4 },
             bottom: { x: anchor.x + 10, y: anchor.y + 26 },
-            left: { x: anchor.x - 88, y: anchor.y + 4 }
+            left: { x: anchor.x - 88, y: anchor.y + 4 },
           };
           const textPosition = textPositionByPort[portKey];
 
@@ -515,9 +533,9 @@ export default function PatchEditor() {
             <circle cx="${node.x + NODE_WIDTH / 2}" cy="${node.y + NODE_HEIGHT}" r="7" fill="#faf7f0" stroke="#231d1f" stroke-width="2" />
             <image x="${iconX}" y="${iconY}" width="${SYMBOL_EXPORT_SIZE}" height="${SYMBOL_EXPORT_SIZE}" href="${assetUri}" preserveAspectRatio="xMidYMid meet" />
             <text x="${node.x + NODE_WIDTH / 2}" y="${labelY}" text-anchor="middle" font-size="11" font-family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif" fill="#231d1f">
-              ${escapeXml(symbol.label)}
+              ${escapeXml(node.symbolId === "custom-module" ? node.note || symbol.label : symbol.label)}
             </text>
-            ${noteMarkup}
+            ${node.symbolId === "custom-module" ? "" : noteMarkup}
             ${portNoteMarkup}
           </g>
         `;
@@ -527,16 +545,26 @@ export default function PatchEditor() {
     return `
       <svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="${bounds.left} ${bounds.top} ${bounds.width} ${bounds.height}">
         ${includeBackground ? `<rect x="${bounds.left}" y="${bounds.top}" width="${bounds.width}" height="${bounds.height}" fill="#eef1e8" />` : ""}
-        ${includeGrid ? `<g opacity="0.55">
-          ${Array.from({ length: Math.ceil(bounds.height / GRID_SIZE) + 1 }, (_, index) => {
-            const y = bounds.top + index * GRID_SIZE;
-            return `<line x1="${bounds.left}" y1="${y}" x2="${bounds.left + bounds.width}" y2="${y}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
-          }).join("")}
-          ${Array.from({ length: Math.ceil(bounds.width / GRID_SIZE) + 1 }, (_, index) => {
-            const x = bounds.left + index * GRID_SIZE;
-            return `<line x1="${x}" y1="${bounds.top}" x2="${x}" y2="${bounds.top + bounds.height}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
-          }).join("")}
-        </g>` : ""}
+        ${
+          includeGrid
+            ? `<g opacity="0.55">
+          ${Array.from(
+            { length: Math.ceil(bounds.height / GRID_SIZE) + 1 },
+            (_, index) => {
+              const y = bounds.top + index * GRID_SIZE;
+              return `<line x1="${bounds.left}" y1="${y}" x2="${bounds.left + bounds.width}" y2="${y}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
+            },
+          ).join("")}
+          ${Array.from(
+            { length: Math.ceil(bounds.width / GRID_SIZE) + 1 },
+            (_, index) => {
+              const x = bounds.left + index * GRID_SIZE;
+              return `<line x1="${x}" y1="${bounds.top}" x2="${x}" y2="${bounds.top + bounds.height}" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1" />`;
+            },
+          ).join("")}
+        </g>`
+            : ""
+        }
         ${connectionMarkup}
         ${nodeMarkup}
       </svg>
@@ -560,7 +588,7 @@ export default function PatchEditor() {
       const svg = await buildPatchSvgMarkup();
       downloadBlob(
         new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
-        `patch-${stamp}.svg`
+        `patch-${stamp}.svg`,
       );
     } catch {
       window.alert("Could not export SVG.");
@@ -572,7 +600,7 @@ export default function PatchEditor() {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       const svg = await buildPatchSvgMarkup({
         includeBackground: false,
-        includeGrid: false
+        includeGrid: false,
       });
       const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -619,7 +647,7 @@ export default function PatchEditor() {
       connections: Array.isArray(state.connections)
         ? state.connections.map((connection) => ({
             ...connection,
-            color: normalizeConnectionColor(connection.color)
+            color: normalizeConnectionColor(connection.color),
           }))
         : [],
       view:
@@ -630,9 +658,9 @@ export default function PatchEditor() {
           ? {
               x: state.view.x,
               y: state.view.y,
-              scale: clampScale(state.view.scale)
+              scale: clampScale(state.view.scale),
             }
-          : DEFAULT_VIEW
+          : DEFAULT_VIEW,
     };
   }
 
@@ -640,7 +668,7 @@ export default function PatchEditor() {
     return {
       nodes,
       connections,
-      view
+      view,
     };
   }
 
@@ -662,6 +690,17 @@ export default function PatchEditor() {
     });
   }, [category, search]);
 
+  const filteredCustomModules = useMemo(() => {
+    if (category !== "all" && category !== "custom") {
+      return [];
+    }
+    const term = search.trim().toLowerCase();
+    if (!term) {
+      return customModules;
+    }
+    return customModules.filter((m) => m.name.toLowerCase().includes(term));
+  }, [category, search, customModules]);
+
   const nodePositions = useMemo(
     () =>
       Object.fromEntries(
@@ -671,11 +710,11 @@ export default function PatchEditor() {
             left: { x: node.x, y: node.y + HORIZONTAL_ANCHOR_Y },
             right: { x: node.x + NODE_WIDTH, y: node.y + HORIZONTAL_ANCHOR_Y },
             top: { x: node.x + NODE_WIDTH / 2, y: node.y },
-            bottom: { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT }
-          }
-        ])
+            bottom: { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT },
+          },
+        ]),
       ),
-    [nodes]
+    [nodes],
   );
 
   useEffect(() => {
@@ -697,7 +736,7 @@ export default function PatchEditor() {
     setThemePreference(
       window.matchMedia("(prefers-color-scheme: dark)").matches
         ? THEME_DARK
-        : THEME_LIGHT
+        : THEME_LIGHT,
     );
   }, []);
 
@@ -716,6 +755,10 @@ export default function PatchEditor() {
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    customModulesRef.current = customModules;
+  }, [customModules]);
 
   useEffect(() => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -739,12 +782,13 @@ export default function PatchEditor() {
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ nodes, connections, view })
+      JSON.stringify({ nodes, connections, view }),
     );
   }, [connections, nodes, view]);
 
   useEffect(() => {
     refreshStoredPatches();
+    refreshCustomModules();
   }, []);
 
   useEffect(() => {
@@ -771,11 +815,12 @@ export default function PatchEditor() {
           addNodeToCanvas(
             palette.symbolId,
             point.x - palette.hotspotX / viewRef.current.scale,
-            point.y - palette.hotspotY / viewRef.current.scale
+            point.y - palette.hotspotY / viewRef.current.scale,
+            palette.presetNote,
           );
         }
       } else if (!moved) {
-        addNodeToCanvas(palette.symbolId, 40, 40);
+        addNodeToCanvas(palette.symbolId, 40, 40, palette.presetNote);
       }
 
       clearPaletteDrag();
@@ -808,26 +853,32 @@ export default function PatchEditor() {
 
             return {
               minX: Math.max(acc.minX, 12 - origin.x),
-              maxX: Math.min(acc.maxX, STAGE_WIDTH - NODE_WIDTH - 12 - origin.x),
+              maxX: Math.min(
+                acc.maxX,
+                STAGE_WIDTH - NODE_WIDTH - 12 - origin.x,
+              ),
               minY: Math.max(acc.minY, 12 - origin.y),
-              maxY: Math.min(acc.maxY, STAGE_HEIGHT - NODE_HEIGHT - 12 - origin.y)
+              maxY: Math.min(
+                acc.maxY,
+                STAGE_HEIGHT - NODE_HEIGHT - 12 - origin.y,
+              ),
             };
           },
           {
             minX: Number.NEGATIVE_INFINITY,
             maxX: Number.POSITIVE_INFINITY,
             minY: Number.NEGATIVE_INFINITY,
-            maxY: Number.POSITIVE_INFINITY
-          }
+            maxY: Number.POSITIVE_INFINITY,
+          },
         );
 
         const safeDeltaX = Math.min(
           Math.max(deltaX, boundedDelta.minX),
-          boundedDelta.maxX
+          boundedDelta.maxX,
         );
         const safeDeltaY = Math.min(
           Math.max(deltaY, boundedDelta.minY),
-          boundedDelta.maxY
+          boundedDelta.maxY,
         );
         const snappedLeadX = snapValue(drag.originLead.x + safeDeltaX);
         const snappedLeadY = snapValue(drag.originLead.y + safeDeltaY);
@@ -840,10 +891,10 @@ export default function PatchEditor() {
               ? {
                   ...node,
                   x: drag.origins[node.id].x + snappedDeltaX,
-                  y: drag.origins[node.id].y + snappedDeltaY
+                  y: drag.origins[node.id].y + snappedDeltaY,
                 }
-              : node
-          )
+              : node,
+          ),
         );
       }
 
@@ -852,7 +903,7 @@ export default function PatchEditor() {
         setView((current) => ({
           ...current,
           x: pan.originX + (event.clientX - pan.startX),
-          y: pan.originY + (event.clientY - pan.startY)
+          y: pan.originY + (event.clientY - pan.startY),
         }));
       }
 
@@ -869,7 +920,7 @@ export default function PatchEditor() {
             x: event.clientX,
             y: event.clientY,
             hotspotX: palette.hotspotX,
-            hotspotY: palette.hotspotY
+            hotspotY: palette.hotspotY,
           });
         }
       }
@@ -879,7 +930,7 @@ export default function PatchEditor() {
         setCablePreview({
           from: cableDrag.from,
           to: toWorldPoint(event.clientX, event.clientY),
-          color: cableDrag.color
+          color: cableDrag.color,
         });
       }
 
@@ -890,7 +941,7 @@ export default function PatchEditor() {
           x1: marquee.startWorld.x,
           y1: marquee.startWorld.y,
           x2: point.x,
-          y2: point.y
+          y2: point.y,
         });
       }
     }
@@ -980,29 +1031,56 @@ export default function PatchEditor() {
     setNodes((current) => current.filter((node) => !ids.has(node.id)));
     setConnections((current) =>
       current.filter(
-        (connection) => !ids.has(connection.from) && !ids.has(connection.to)
-      )
+        (connection) => !ids.has(connection.from) && !ids.has(connection.to),
+      ),
     );
     setSelectedNodeIds((current) => current.filter((id) => !ids.has(id)));
   }
 
   function removeConnection(connectionId) {
     setConnections((current) =>
-      current.filter((connection) => connection.id !== connectionId)
+      current.filter((connection) => connection.id !== connectionId),
     );
     setSelectedConnectionId((current) =>
-      current === connectionId ? null : current
+      current === connectionId ? null : current,
     );
   }
 
-  function addNodeToCanvas(symbolId, x, y) {
+  function addNodeToCanvas(symbolId, x, y, presetNote) {
     const next = snapNodePosition(x, y);
-    setNodes((current) => [...current, createNode(symbolId, next.x, next.y)]);
+    const newNode = createNode(symbolId, next.x, next.y);
+    if (symbolId === "custom-module") {
+      let name;
+      if (presetNote !== undefined) {
+        name = presetNote;
+      } else {
+        const entered = window.prompt(
+          "Module name (e.g. Turing Machine, Shift Register…):",
+          "",
+        );
+        if (entered === null) {
+          return;
+        }
+        name = entered.trim();
+        if (!name) {
+          return;
+        }
+        if (customModulesRef.current.some((m) => m.name === name)) {
+          window.alert(`"${name}" already exists. Drag it from the Custom section in the palette.`);
+          return;
+        }
+        saveCustomModule(name).then(refreshCustomModules).catch(() => {});
+      }
+      newNode.note = name;
+    }
+    setNodes((current) => [...current, newNode]);
   }
 
   function updateNodeNote(nodeId, value) {
     setNodes((current) =>
-      current.map((node) => (node.id === nodeId ? { ...node, note: value } : node))
+      current.map((node) =>
+        node.id === nodeId ? { ...node, note: value } : node,
+      ),
     );
   }
 
@@ -1014,11 +1092,11 @@ export default function PatchEditor() {
               ...node,
               portNotes: {
                 ...(node.portNotes || {}),
-                [portKey]: value
-              }
+                [portKey]: value,
+              },
             }
-          : node
-      )
+          : node,
+      ),
     );
   }
 
@@ -1031,7 +1109,7 @@ export default function PatchEditor() {
     const symbol = symbolMap[node.symbolId];
     const nextValue = window.prompt(
       `Note for ${symbol?.label || "symbol"}`,
-      node.note || ""
+      node.note || "",
     );
     if (nextValue === null) {
       return;
@@ -1049,7 +1127,7 @@ export default function PatchEditor() {
     const symbol = symbolMap[node.symbolId];
     const nextValue = window.prompt(
       `${portKey} patch point note for ${symbol?.label || "symbol"}`,
-      node.portNotes?.[portKey] || ""
+      node.portNotes?.[portKey] || "",
     );
     if (nextValue === null) {
       return;
@@ -1058,7 +1136,7 @@ export default function PatchEditor() {
     updateNodePortNote(nodeId, portKey, nextValue.trim());
   }
 
-  function handlePalettePointerDown(event, symbolId) {
+  function handlePalettePointerDown(event, symbolId, presetNote) {
     if (event.button !== 0) {
       return;
     }
@@ -1069,11 +1147,12 @@ export default function PatchEditor() {
 
     paletteDragRef.current = {
       symbolId,
+      presetNote,
       startX: event.clientX,
       startY: event.clientY,
       active: false,
       hotspotX: PALETTE_DRAG_HOTSPOT_X,
-      hotspotY: PALETTE_DRAG_HOTSPOT_Y
+      hotspotY: PALETTE_DRAG_HOTSPOT_Y,
     };
   }
 
@@ -1101,7 +1180,7 @@ export default function PatchEditor() {
     const origins = Object.fromEntries(
       nodes
         .filter((entry) => nextSelectedIds.includes(entry.id))
-        .map((entry) => [entry.id, { x: entry.x, y: entry.y }])
+        .map((entry) => [entry.id, { x: entry.x, y: entry.y }]),
     );
 
     dragRef.current = {
@@ -1110,7 +1189,7 @@ export default function PatchEditor() {
       origins,
       originLead: { x: node.x, y: node.y },
       offsetX: point.x - node.x,
-      offsetY: point.y - node.y
+      offsetY: point.y - node.y,
     };
     setSelectedNodeIds(nextSelectedIds);
     setSelectedConnectionId(null);
@@ -1138,12 +1217,12 @@ export default function PatchEditor() {
     cableDragRef.current = {
       fromNodeId: nodeId,
       from,
-      color: cableColor
+      color: cableColor,
     };
     setCablePreview({
       from,
       to: from,
-      color: cableColor
+      color: cableColor,
     });
     setSelectedNodeIds([]);
     setSelectedConnectionId(null);
@@ -1174,8 +1253,8 @@ export default function PatchEditor() {
         id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         from: activeCable.fromNodeId,
         to: nodeId,
-        color: activeCable.color
-      }
+        color: activeCable.color,
+      },
     ]);
     cableDragRef.current = null;
     setCablePreview(null);
@@ -1186,7 +1265,10 @@ export default function PatchEditor() {
       const parsed =
         typeof rawState === "string" ? JSON.parse(rawState) : rawState;
 
-      if (!Array.isArray(parsed?.nodes) || !Array.isArray(parsed?.connections)) {
+      if (
+        !Array.isArray(parsed?.nodes) ||
+        !Array.isArray(parsed?.connections)
+      ) {
         throw new Error("Invalid patch JSON");
       }
 
@@ -1202,6 +1284,61 @@ export default function PatchEditor() {
       setLibraryMessage("Opened JSON patch file.");
     } catch (error) {
       window.alert(error.message || "Could not open patch JSON.");
+    }
+  }
+
+  async function refreshCustomModules() {
+    try {
+      const modules = await listCustomModules();
+      setCustomModules(modules);
+    } catch {
+      // silently ignore
+    }
+  }
+
+  async function handleDeleteCustomModule(id, name) {
+    const instances = nodes.filter(
+      (node) => node.symbolId === "custom-module" && node.note === name,
+    );
+    if (instances.length > 0) {
+      const confirmed = window.confirm(
+        `"${name}" is used ${instances.length} time${instances.length === 1 ? "" : "s"} in this patch. Remove those instances too?`,
+      );
+      if (!confirmed) {
+        return;
+      }
+      removeNodes(instances.map((node) => node.id));
+    }
+    try {
+      await deleteCustomModule(id);
+      await refreshCustomModules();
+    } catch {
+      // silently ignore
+    }
+  }
+
+  async function handleRenameCustomModule(id, oldName) {
+    const newName = window.prompt("Rename module:", oldName);
+    if (newName === null || newName.trim() === "" || newName.trim() === oldName) {
+      return;
+    }
+    const trimmed = newName.trim();
+    if (customModules.some((m) => m.name === trimmed)) {
+      window.alert(`A custom module named "${trimmed}" already exists.`);
+      return;
+    }
+    try {
+      await renameCustomModule(id, trimmed);
+      setNodes((current) =>
+        current.map((node) =>
+          node.symbolId === "custom-module" && node.note === oldName
+            ? { ...node, note: trimmed }
+            : node,
+        ),
+      );
+      await refreshCustomModules();
+    } catch {
+      // silently ignore
     }
   }
 
@@ -1221,7 +1358,9 @@ export default function PatchEditor() {
       let patchName = currentPatchName;
 
       if (saveAs || !patchId) {
-        const suggested = saveAs ? `${currentPatchName} copy` : currentPatchName;
+        const suggested = saveAs
+          ? `${currentPatchName} copy`
+          : currentPatchName;
         const enteredName = window.prompt("Patch name", suggested);
         if (!enteredName) {
           return;
@@ -1230,7 +1369,8 @@ export default function PatchEditor() {
         patchName = enteredName.trim() || "Untitled patch";
         patchId = saveAs
           ? `patch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-          : currentPatchId || `patch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          : currentPatchId ||
+            `patch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       }
 
       const existing = patchId ? await getStoredPatch(patchId) : null;
@@ -1239,7 +1379,7 @@ export default function PatchEditor() {
         name: patchName,
         createdAt: existing?.createdAt || now,
         updatedAt: now,
-        ...getPatchPayload()
+        ...getPatchPayload(),
       });
 
       setCurrentPatchId(patchId);
@@ -1294,10 +1434,10 @@ export default function PatchEditor() {
       version: 1,
       savedAt: new Date().toISOString(),
       name: currentPatchName,
-      ...getPatchPayload()
+      ...getPatchPayload(),
     };
     const blob = new Blob([JSON.stringify(patch, null, 2)], {
-      type: "application/json"
+      type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1361,7 +1501,9 @@ export default function PatchEditor() {
       return;
     }
 
-    const isPanGesture = event.button === 1 || ((event.metaKey || event.ctrlKey) && event.button === 0);
+    const isPanGesture =
+      event.button === 1 ||
+      ((event.metaKey || event.ctrlKey) && event.button === 0);
 
     if (isPanGesture) {
       event.preventDefault();
@@ -1370,20 +1512,20 @@ export default function PatchEditor() {
         startX: event.clientX,
         startY: event.clientY,
         originX: viewRef.current.x,
-        originY: viewRef.current.y
+        originY: viewRef.current.y,
       };
       setIsPanning(true);
     } else if (event.button === 0) {
       const startWorld = toWorldPoint(event.clientX, event.clientY);
       panRef.current = {
         mode: "select",
-        startWorld
+        startWorld,
       };
       setSelectionBox({
         x1: startWorld.x,
         y1: startWorld.y,
         x2: startWorld.x,
-        y2: startWorld.y
+        y2: startWorld.y,
       });
     }
 
@@ -1397,11 +1539,7 @@ export default function PatchEditor() {
     const current = viewRef.current;
     const zoomIntensity = event.ctrlKey ? 0.0025 : 0.0014;
     const zoomFactor = Math.exp(-event.deltaY * zoomIntensity);
-    zoomAtClientPoint(
-      current.scale * zoomFactor,
-      event.clientX,
-      event.clientY
-    );
+    zoomAtClientPoint(current.scale * zoomFactor, event.clientX, event.clientY);
   }
 
   return (
@@ -1411,8 +1549,8 @@ export default function PatchEditor() {
           <div className="sidebar-section">
             <h1 className="sidebar-title">Patch Notation Tool</h1>
             <p className="sidebar-copy">
-              Drag symbols into the canvas and connect them with color-coded cables
-              for sound, modulation, gate-trigger, clock, and pitch flow.
+              Drag symbols into the canvas and connect them with color-coded
+              cables for sound, modulation, gate-trigger, clock, and pitch flow.
             </p>
           </div>
 
@@ -1441,7 +1579,9 @@ export default function PatchEditor() {
                 ))}
               </select>
             </div>
-            {libraryMessage ? <p className="sidebar-status">{libraryMessage}</p> : null}
+            {libraryMessage ? (
+              <p className="sidebar-status">{libraryMessage}</p>
+            ) : null}
             <p className="sidebar-credit">
               Symbols used from the free-to-use PATCH &amp; TWEAK patch symbols.
               See{" "}
@@ -1469,16 +1609,51 @@ export default function PatchEditor() {
               <button
                 key={symbol.id}
                 className="symbol-button"
-                onPointerDown={(event) => handlePalettePointerDown(event, symbol.id)}
+                onPointerDown={(event) =>
+                  handlePalettePointerDown(event, symbol.id)
+                }
               >
                 <SymbolIcon symbol={symbol} size={72} />
                 <div className="symbol-meta">
                   <div className="symbol-name">{symbol.label}</div>
                   <div className="symbol-category">
-                    {symbolCategories.find((entry) => entry.id === symbol.category)?.label}
+                    {
+                      symbolCategories.find(
+                        (entry) => entry.id === symbol.category,
+                      )?.label
+                    }
                   </div>
                 </div>
               </button>
+            ))}
+            {filteredCustomModules.map((entry) => (
+              <div
+                key={entry.id}
+                className="symbol-button saved-custom-module"
+                onPointerDown={(event) => handlePalettePointerDown(event, "custom-module", entry.name)}
+              >
+                <SymbolIcon symbol={symbolMap["custom-module"]} size={72} />
+                <div className="symbol-meta">
+                  <div className="symbol-name">{entry.name}</div>
+                  <div className="symbol-category">Custom</div>
+                </div>
+                <button
+                  className="custom-module-action custom-module-edit"
+                  title="Rename module"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => handleRenameCustomModule(entry.id, entry.name)}
+                >
+                  ✎
+                </button>
+                <button
+                  className="custom-module-action custom-module-delete"
+                  title="Remove from library"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => handleDeleteCustomModule(entry.id, entry.name)}
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
 
@@ -1628,7 +1803,9 @@ export default function PatchEditor() {
                           onClick={() => openStoredPatchById(patch.id)}
                         >
                           <span>{patch.name}</span>
-                          <span>{new Date(patch.updatedAt).toLocaleString()}</span>
+                          <span>
+                            {new Date(patch.updatedAt).toLocaleString()}
+                          </span>
                         </button>
                         <button
                           className="patch-library-delete"
@@ -1643,7 +1820,6 @@ export default function PatchEditor() {
               ) : null}
             </div>
           </div>
-
         </aside>
 
         <section className="panel workspace">
@@ -1659,7 +1835,9 @@ export default function PatchEditor() {
                 >
                   -
                 </button>
-                <span className="zoom-readout">{Math.round(view.scale * 100)}%</span>
+                <span className="zoom-readout">
+                  {Math.round(view.scale * 100)}%
+                </span>
                 <button
                   className="toolbar-icon-button"
                   onClick={() => handleZoomStep(1)}
@@ -1853,11 +2031,19 @@ export default function PatchEditor() {
                 className="toolbar-icon-button"
                 onClick={() =>
                   setThemePreference((current) =>
-                    current === THEME_DARK ? THEME_LIGHT : THEME_DARK
+                    current === THEME_DARK ? THEME_LIGHT : THEME_DARK,
                   )
                 }
-                title={themePreference === THEME_DARK ? "Switch to light mode" : "Switch to dark mode"}
-                aria-label={themePreference === THEME_DARK ? "Switch to light mode" : "Switch to dark mode"}
+                title={
+                  themePreference === THEME_DARK
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
+                aria-label={
+                  themePreference === THEME_DARK
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
                 type="button"
               >
                 {themePreference === THEME_DARK ? (
@@ -1893,7 +2079,7 @@ export default function PatchEditor() {
             </div>
             <span className="toolbar-note">
               Use Select for moving, a cable color for patching, and Text for
-              annotations. Middle-drag or Cmd/Ctrl-drag pans.
+              annotations. Middle-drag or Cmd/Ctrl-drag pans the view port.
             </span>
           </div>
 
@@ -1946,8 +2132,8 @@ export default function PatchEditor() {
           >
             {nodes.length === 0 ? (
               <div className="canvas-empty">
-                Drop symbols here, switch between Select, cable colors, and Text,
-                then use middle-drag or Cmd/Ctrl-drag to pan.
+                Drop symbols here, switch between Select, cable colors, and
+                Text, then use middle-drag or Cmd/Ctrl-drag to pan.
               </div>
             ) : null}
 
@@ -1956,14 +2142,20 @@ export default function PatchEditor() {
               style={{
                 width: STAGE_WIDTH,
                 height: STAGE_HEIGHT,
-                transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`
+                transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
               }}
             >
-              <svg className="canvas-overlay" width={STAGE_WIDTH} height={STAGE_HEIGHT}>
+              <svg
+                className="canvas-overlay"
+                width={STAGE_WIDTH}
+                height={STAGE_HEIGHT}
+              >
                 {connections.map((connection) => {
                   const anchorKeys = getAnchorKeysForColor(connection.color);
-                  const source = nodePositions[connection.from]?.[anchorKeys.output];
-                  const target = nodePositions[connection.to]?.[anchorKeys.input];
+                  const source =
+                    nodePositions[connection.from]?.[anchorKeys.output];
+                  const target =
+                    nodePositions[connection.to]?.[anchorKeys.input];
                   if (!source || !target) {
                     return null;
                   }
@@ -1973,11 +2165,17 @@ export default function PatchEditor() {
                       key={connection.id}
                       className="connection-path"
                       d={getConnectionPath(source, target)}
-                      stroke={cableColors[connection.color] || cableColors.modulation}
-                      strokeWidth={selectedConnectionId === connection.id ? "10" : "8"}
+                      stroke={
+                        cableColors[connection.color] || cableColors.modulation
+                      }
+                      strokeWidth={
+                        selectedConnectionId === connection.id ? "10" : "8"
+                      }
                       strokeLinecap="round"
                       fill="none"
-                      opacity={selectedConnectionId === connection.id ? "1" : "0.95"}
+                      opacity={
+                        selectedConnectionId === connection.id ? "1" : "0.95"
+                      }
                       onPointerDown={(event) => {
                         event.stopPropagation();
                         setSelectedConnectionId(connection.id);
@@ -1989,7 +2187,9 @@ export default function PatchEditor() {
                 {cablePreview ? (
                   <path
                     d={getConnectionPath(cablePreview.from, cablePreview.to)}
-                    stroke={cableColors[cablePreview.color] || cableColors.modulation}
+                    stroke={
+                      cableColors[cablePreview.color] || cableColors.modulation
+                    }
                     strokeWidth="8"
                     strokeLinecap="round"
                     fill="none"
@@ -2010,47 +2210,55 @@ export default function PatchEditor() {
                     key={node.id}
                     className={`node-card ${selectedNodeIds.includes(node.id) ? "selected" : ""}`}
                     style={{ left: node.x, top: node.y }}
-                    onPointerDown={(event) => handleNodePointerDown(event, node.id)}
+                    onPointerDown={(event) =>
+                      handleNodePointerDown(event, node.id)
+                    }
                   >
-                  <button
-                    className="anchor input left"
-                    title="Left input anchor"
-                    onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "input-left")
-                    }
-                    onPointerUp={(event) =>
-                      handleAnchorPointerUp(event, node.id, "input-left")
-                    }
-                  />
-                  <button
-                    className="anchor output right"
-                    title="Right output anchor"
-                    onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "output-right")
-                    }
-                  />
-                  <button
-                    className="anchor input bottom"
-                    title="Bottom input anchor"
-                    onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "input-bottom")
-                    }
-                    onPointerUp={(event) =>
-                      handleAnchorPointerUp(event, node.id, "input-bottom")
-                    }
-                  />
-                  <button
-                    className="anchor output top"
-                    title="Top output anchor"
-                    onPointerDown={(event) =>
-                      handleAnchorPointerDown(event, node.id, "output-top")
-                    }
-                  />
+                    <button
+                      className="anchor input left"
+                      title="Left input anchor"
+                      onPointerDown={(event) =>
+                        handleAnchorPointerDown(event, node.id, "input-left")
+                      }
+                      onPointerUp={(event) =>
+                        handleAnchorPointerUp(event, node.id, "input-left")
+                      }
+                    />
+                    <button
+                      className="anchor output right"
+                      title="Right output anchor"
+                      onPointerDown={(event) =>
+                        handleAnchorPointerDown(event, node.id, "output-right")
+                      }
+                    />
+                    <button
+                      className="anchor input bottom"
+                      title="Bottom input anchor"
+                      onPointerDown={(event) =>
+                        handleAnchorPointerDown(event, node.id, "input-bottom")
+                      }
+                      onPointerUp={(event) =>
+                        handleAnchorPointerUp(event, node.id, "input-bottom")
+                      }
+                    />
+                    <button
+                      className="anchor output top"
+                      title="Top output anchor"
+                      onPointerDown={(event) =>
+                        handleAnchorPointerDown(event, node.id, "output-top")
+                      }
+                    />
                     <div className="node-icon">
                       <SymbolIcon symbol={symbol} size={62} />
                     </div>
-                    <div className="node-label">{symbol.label}</div>
-                    {node.note ? <div className="node-note-badge">{node.note}</div> : null}
+                    <div className="node-label">
+                      {node.symbolId === "custom-module"
+                        ? node.note || "Custom module"
+                        : symbol.label}
+                    </div>
+                    {node.symbolId !== "custom-module" && node.note ? (
+                      <div className="node-note-badge">{node.note}</div>
+                    ) : null}
                     {PORT_KEYS.map((portKey) =>
                       node.portNotes?.[portKey] ? (
                         <div
@@ -2059,7 +2267,7 @@ export default function PatchEditor() {
                         >
                           {node.portNotes[portKey]}
                         </div>
-                      ) : null
+                      ) : null,
                     )}
                   </article>
                 );
@@ -2072,12 +2280,11 @@ export default function PatchEditor() {
                     left: Math.min(selectionBox.x1, selectionBox.x2),
                     top: Math.min(selectionBox.y1, selectionBox.y2),
                     width: Math.abs(selectionBox.x2 - selectionBox.x1),
-                    height: Math.abs(selectionBox.y2 - selectionBox.y1)
+                    height: Math.abs(selectionBox.y2 - selectionBox.y1),
                   }}
                 />
               ) : null}
             </div>
-
           </div>
         </section>
       </div>
@@ -2087,14 +2294,17 @@ export default function PatchEditor() {
               className="palette-drag-preview"
               style={{
                 left: paletteDrag.x - paletteDrag.hotspotX,
-                top: paletteDrag.y - paletteDrag.hotspotY
+                top: paletteDrag.y - paletteDrag.hotspotY,
               }}
             >
               <div className="node-icon">
-                <SymbolIcon symbol={symbolMap[paletteDrag.symbolId]} size={62} />
+                <SymbolIcon
+                  symbol={symbolMap[paletteDrag.symbolId]}
+                  size={62}
+                />
               </div>
             </div>,
-            document.body
+            document.body,
           )
         : null}
     </main>
