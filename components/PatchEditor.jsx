@@ -66,15 +66,11 @@ const toolDescriptions = {
     "Select, move, and area-select symbols. Use this as the default editing mode.",
   [TEXT_TOOL_ID]:
     "Click a symbol to add a note, or click any input/output patch point to annotate that port.",
-  sound:
-    "Audio cable. Connects horizontally from the right output of one symbol to the left input of another.",
-  modulation:
-    "Modulation cable. Connects vertically from the top output of one symbol to the bottom input of another.",
-  gate: "Gate / trigger cable. Use for triggers and gates; it connects vertically from top output to bottom input.",
-  clock:
-    "Clock cable. Use for clock and timing signals; it connects vertically from top output to bottom input.",
-  pitch:
-    "Pitch cable. Use for pitch CV; it connects vertically from top output to bottom input.",
+  sound: "Audio cable. Click any patch point on one symbol, then any patch point on another to connect them.",
+  modulation: "Modulation cable. Click any patch point on one symbol, then any patch point on another to connect them.",
+  gate: "Gate / trigger cable. Use for triggers and gates. Click any patch point on one symbol, then any patch point on another to connect them.",
+  clock: "Clock cable. Use for clock and timing signals. Click any patch point on one symbol, then any patch point on another to connect them.",
+  pitch: "Pitch cable. Use for pitch CV. Click any patch point on one symbol, then any patch point on another to connect them.",
 };
 
 const sampleState = {
@@ -126,37 +122,49 @@ const sampleState = {
     {
       id: "c-1773458884193-e7s0ph",
       from: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
+      fromAnchor: "right",
       to: "low-pass-filter-1773458836296-c82zwe",
+      toAnchor: "left",
       color: "sound",
     },
     {
       id: "c-1773458886383-ohwo9g",
       from: "low-pass-filter-1773458836296-c82zwe",
+      fromAnchor: "right",
       to: "amplifier-vca-1773458857274-fq37nq",
+      toAnchor: "left",
       color: "sound",
     },
     {
       id: "c-1773458891873-m806jc",
       from: "eg-adsr-1773458851950-b3zck9",
+      fromAnchor: "top",
       to: "amplifier-vca-1773458857274-fq37nq",
+      toAnchor: "bottom",
       color: "modulation",
     },
     {
       id: "c-1773458894365-5b0p0f",
       from: "eg-adsr-1773458851950-b3zck9",
+      fromAnchor: "top",
       to: "low-pass-filter-1773458836296-c82zwe",
+      toAnchor: "bottom",
       color: "modulation",
     },
     {
       id: "c-1773458911112-haag4r",
       from: "cv-gate-sequencer-1773458868277-8mhf34",
+      fromAnchor: "top",
       to: "eg-adsr-1773458851950-b3zck9",
+      toAnchor: "bottom",
       color: "gate",
     },
     {
       id: "c-1773458922805-5mme1x",
       from: "cv-gate-sequencer-1773458868277-8mhf34",
+      fromAnchor: "top",
       to: "sawtooth-wave-oscillator-1773458817257-xkyvcn",
+      toAnchor: "bottom",
       color: "pitch",
     },
   ],
@@ -187,23 +195,6 @@ function getConnectionPath(source, target) {
   return `M ${source.x} ${source.y} C ${source.x + handle} ${source.y}, ${target.x - handle} ${target.y}, ${target.x} ${target.y}`;
 }
 
-function getCableAxis(color) {
-  return color === "sound" ? "horizontal" : "vertical";
-}
-
-function getAnchorKeysForColor(color) {
-  if (getCableAxis(color) === "horizontal") {
-    return {
-      output: "right",
-      input: "left",
-    };
-  }
-
-  return {
-    output: "top",
-    input: "bottom",
-  };
-}
 
 function createNode(symbolId, x, y) {
   return {
@@ -283,6 +274,7 @@ export default function PatchEditor() {
   const panRef = useRef(null);
   const paletteDragRef = useRef(null);
   const cableDragRef = useRef(null);
+  const rerouteRef = useRef(null);
   const fileInputRef = useRef(null);
   const viewRef = useRef(DEFAULT_VIEW);
   const nodesRef = useRef(sampleState.nodes);
@@ -464,9 +456,8 @@ export default function PatchEditor() {
     const symbolDataUris = Object.fromEntries(symbolEntries);
     const connectionMarkup = connections
       .map((connection) => {
-        const anchorKeys = getAnchorKeysForColor(connection.color);
-        const source = nodePositions[connection.from]?.[anchorKeys.output];
-        const target = nodePositions[connection.to]?.[anchorKeys.input];
+        const source = nodePositions[connection.from]?.[connection.fromAnchor];
+        const target = nodePositions[connection.to]?.[connection.toAnchor];
         if (!source || !target) {
           return "";
         }
@@ -717,6 +708,15 @@ export default function PatchEditor() {
     [nodes],
   );
 
+  const connectedAnchors = useMemo(() => {
+    const set = new Set();
+    connections.forEach((c) => {
+      set.add(`${c.from}-${c.fromAnchor}`);
+      set.add(`${c.to}-${c.toAnchor}`);
+    });
+    return set;
+  }, [connections]);
+
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
@@ -830,6 +830,10 @@ export default function PatchEditor() {
       dragRef.current = null;
       panRef.current = null;
       cableDragRef.current = null;
+      if (rerouteRef.current) {
+        setConnections((c) => [...c, rerouteRef.current.originalConnection]);
+        rerouteRef.current = null;
+      }
       setIsPanning(false);
       setCablePreview(null);
       setSelectionBox(null);
@@ -931,6 +935,15 @@ export default function PatchEditor() {
           from: cableDrag.from,
           to: toWorldPoint(event.clientX, event.clientY),
           color: cableDrag.color,
+        });
+      }
+
+      const reroute = rerouteRef.current;
+      if (reroute) {
+        setCablePreview({
+          from: reroute.fixedPosition,
+          to: toWorldPoint(event.clientX, event.clientY),
+          color: reroute.originalConnection.color,
         });
       }
 
@@ -1204,26 +1217,64 @@ export default function PatchEditor() {
       return;
     }
 
-    const expected = getAnchorKeysForColor(cableColor);
-    if (anchorType !== `output-${expected.output}`) {
+    const [, anchorKey] = anchorType.split("-");
+
+    // Middle mouse or Cmd/Ctrl+click: reroute an existing cable from this anchor
+    if (event.button === 1 || ((event.metaKey || event.ctrlKey) && event.button === 0)) {
+      event.preventDefault();
+      const existingConnection = connections.find(
+        (c) =>
+          (c.from === nodeId && c.fromAnchor === anchorKey) ||
+          (c.to === nodeId && c.toAnchor === anchorKey),
+      );
+      if (existingConnection) {
+        const isFromEnd =
+          existingConnection.from === nodeId &&
+          existingConnection.fromAnchor === anchorKey;
+        const fixedNodeId = isFromEnd
+          ? existingConnection.to
+          : existingConnection.from;
+        const fixedAnchor = isFromEnd
+          ? existingConnection.toAnchor
+          : existingConnection.fromAnchor;
+        const fixedPosition = nodePositions[fixedNodeId]?.[fixedAnchor];
+
+        setConnections((c) =>
+          c.filter((conn) => conn.id !== existingConnection.id),
+        );
+        rerouteRef.current = {
+          originalConnection: existingConnection,
+          fixedNodeId,
+          fixedPosition,
+          movingEnd: isFromEnd ? "from" : "to",
+        };
+        setCablePreview({
+          from: fixedPosition,
+          to: fixedPosition,
+          color: existingConnection.color,
+        });
+        setSelectedNodeIds([]);
+        setSelectedConnectionId(null);
+      }
       return;
     }
 
-    const from = nodePositions[nodeId]?.[expected.output];
+    if (activeTool !== "cable") {
+      return;
+    }
+
+    const from = nodePositions[nodeId]?.[anchorKey];
     if (!from) {
       return;
     }
 
     cableDragRef.current = {
       fromNodeId: nodeId,
+      fromAnchor: anchorKey,
       from,
       color: cableColor,
     };
-    setCablePreview({
-      from,
-      to: from,
-      color: cableColor,
-    });
+    setCablePreview({ from, to: from, color: cableColor });
     setSelectedNodeIds([]);
     setSelectedConnectionId(null);
   }
@@ -1231,13 +1282,27 @@ export default function PatchEditor() {
   function handleAnchorPointerUp(event, nodeId, anchorType) {
     event.stopPropagation();
 
-    const activeCable = cableDragRef.current;
-    if (!activeCable) {
+    const [, anchorKey] = anchorType.split("-");
+
+    const activeReroute = rerouteRef.current;
+    if (activeReroute) {
+      if (nodeId !== activeReroute.fixedNodeId) {
+        const { originalConnection, movingEnd } = activeReroute;
+        const newConnection =
+          movingEnd === "from"
+            ? { ...originalConnection, from: nodeId, fromAnchor: anchorKey }
+            : { ...originalConnection, to: nodeId, toAnchor: anchorKey };
+        setConnections((c) => [...c, newConnection]);
+      } else {
+        setConnections((c) => [...c, activeReroute.originalConnection]);
+      }
+      rerouteRef.current = null;
+      setCablePreview(null);
       return;
     }
 
-    const expected = getAnchorKeysForColor(activeCable.color);
-    if (anchorType !== `input-${expected.input}`) {
+    const activeCable = cableDragRef.current;
+    if (!activeCable) {
       return;
     }
 
@@ -1252,7 +1317,9 @@ export default function PatchEditor() {
       {
         id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         from: activeCable.fromNodeId,
+        fromAnchor: activeCable.fromAnchor,
         to: nodeId,
+        toAnchor: anchorKey,
         color: activeCable.color,
       },
     ]);
@@ -1547,7 +1614,7 @@ export default function PatchEditor() {
       <div className="app-frame">
         <aside className="panel sidebar">
           <div className="sidebar-section">
-            <h1 className="sidebar-title">Patch Notation Tool</h1>
+            <h1 className="sidebar-title">Patch Notation Tool <sup className="beta-badge">Beta</sup></h1>
             <p className="sidebar-copy">
               Drag symbols into the canvas and connect them with color-coded
               cables for sound, modulation, gate-trigger, clock, and pitch flow.
@@ -2087,6 +2154,7 @@ export default function PatchEditor() {
             <button
               className={`legend-swatch select-tool ${activeTool === SELECT_TOOL_ID ? "selected" : ""}`}
               onClick={() => setActiveTool(SELECT_TOOL_ID)}
+              title={toolDescriptions[SELECT_TOOL_ID]}
               type="button"
             >
               Select
@@ -2097,9 +2165,20 @@ export default function PatchEditor() {
                 className={`legend-swatch ${activeTool === "cable" && cableColor === option.id ? "selected" : ""}`}
                 style={{ color: cableColors[option.id] }}
                 onClick={() => {
-                  setCableColor(option.id);
-                  setActiveTool("cable");
+                  if (selectedConnectionId) {
+                    setConnections((current) =>
+                      current.map((c) =>
+                        c.id === selectedConnectionId
+                          ? { ...c, color: option.id }
+                          : c,
+                      ),
+                    );
+                  } else {
+                    setCableColor(option.id);
+                    setActiveTool("cable");
+                  }
                 }}
+                title={toolDescriptions[option.id]}
                 type="button"
               >
                 {option.label}
@@ -2108,6 +2187,7 @@ export default function PatchEditor() {
             <button
               className={`legend-swatch text-tool ${activeTool === TEXT_TOOL_ID ? "selected" : ""}`}
               onClick={() => setActiveTool(TEXT_TOOL_ID)}
+              title={toolDescriptions[TEXT_TOOL_ID]}
               type="button"
             >
               Text
@@ -2151,11 +2231,10 @@ export default function PatchEditor() {
                 height={STAGE_HEIGHT}
               >
                 {connections.map((connection) => {
-                  const anchorKeys = getAnchorKeysForColor(connection.color);
                   const source =
-                    nodePositions[connection.from]?.[anchorKeys.output];
+                    nodePositions[connection.from]?.[connection.fromAnchor];
                   const target =
-                    nodePositions[connection.to]?.[anchorKeys.input];
+                    nodePositions[connection.to]?.[connection.toAnchor];
                   if (!source || !target) {
                     return null;
                   }
@@ -2214,40 +2293,22 @@ export default function PatchEditor() {
                       handleNodePointerDown(event, node.id)
                     }
                   >
-                    <button
-                      className="anchor input left"
-                      title="Left input anchor"
-                      onPointerDown={(event) =>
-                        handleAnchorPointerDown(event, node.id, "input-left")
-                      }
-                      onPointerUp={(event) =>
-                        handleAnchorPointerUp(event, node.id, "input-left")
-                      }
-                    />
-                    <button
-                      className="anchor output right"
-                      title="Right output anchor"
-                      onPointerDown={(event) =>
-                        handleAnchorPointerDown(event, node.id, "output-right")
-                      }
-                    />
-                    <button
-                      className="anchor input bottom"
-                      title="Bottom input anchor"
-                      onPointerDown={(event) =>
-                        handleAnchorPointerDown(event, node.id, "input-bottom")
-                      }
-                      onPointerUp={(event) =>
-                        handleAnchorPointerUp(event, node.id, "input-bottom")
-                      }
-                    />
-                    <button
-                      className="anchor output top"
-                      title="Top output anchor"
-                      onPointerDown={(event) =>
-                        handleAnchorPointerDown(event, node.id, "output-top")
-                      }
-                    />
+                    {["left", "right", "bottom", "top"].map((side) => {
+                      const isConnected = connectedAnchors.has(`${node.id}-${side}`);
+                      return (
+                        <button
+                          key={side}
+                          className={`anchor ${side}${isConnected ? " anchor-connected" : ""}`}
+                          title={isConnected ? "Middle-click or Cmd/Ctrl+click to reroute" : undefined}
+                          onPointerDown={(event) =>
+                            handleAnchorPointerDown(event, node.id, `any-${side}`)
+                          }
+                          onPointerUp={(event) =>
+                            handleAnchorPointerUp(event, node.id, `any-${side}`)
+                          }
+                        />
+                      );
+                    })}
                     <div className="node-icon">
                       <SymbolIcon symbol={symbol} size={62} />
                     </div>
