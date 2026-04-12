@@ -630,6 +630,23 @@ export default function PatchEditor() {
     }
   }
 
+  async function handleExportPdf() {
+    try {
+      const svg = await buildPatchSvgMarkup();
+      const html = `<!DOCTYPE html><html><head><style>@page{size:auto;margin:0}body{margin:0;background:#fff}img{display:block;max-width:100%}</style></head><body><img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}" /></body></html>`;
+      const win = window.open("", "_blank");
+      if (!win) {
+        window.alert("Could not open print window. Please allow pop-ups for this site.");
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      win.onload = () => win.print();
+    } catch {
+      window.alert("Could not export PDF.");
+    }
+  }
+
   function normalizePatchState(state) {
     return {
       nodes: Array.isArray(state.nodes) ? state.nodes.map(normalizeNode) : [],
@@ -1979,6 +1996,40 @@ export default function PatchEditor() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
+                  </ToolbarIcon>
+                </button>
+                <button
+                  className="toolbar-icon-button"
+                  onClick={handleExportPdf}
+                  type="button"
+                  title="Export PDF"
+                  aria-label="Export PDF"
+                >
+                  <ToolbarIcon>
+                    <path
+                      d="M8 4h6l4 4v12H8z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 4v4h4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <text
+                      x="12"
+                      y="16"
+                      textAnchor="middle"
+                      fontSize="5.5"
+                      fontWeight="700"
+                      fontFamily="sans-serif"
+                      fill="currentColor"
+                    >PDF</text>
                   </ToolbarIcon>
                 </button>
                 <button
