@@ -399,8 +399,8 @@ html.theme-dark .custom-module-delete:hover {
 .canvas-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: auto;
-  z-index: 1;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .canvas-empty {
@@ -446,7 +446,7 @@ html.theme-dark .custom-module-delete:hover {
   outline: 3px solid rgba(11, 136, 216, 0.22);
 }
 
-.node-card:hover .anchor,
+.patching-mode .node-card:hover .anchor,
 .node-card.selected .anchor {
   opacity: 1;
   transform: scale(1);

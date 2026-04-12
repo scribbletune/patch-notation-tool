@@ -185,14 +185,11 @@ const cableColorAliases = {
 function getConnectionPath(source, target) {
   const dx = target.x - source.x;
   const dy = target.y - source.y;
-
-  if (Math.abs(dy) > Math.abs(dx)) {
-    const handle = Math.max(80, Math.abs(dy) * 0.45);
-    return `M ${source.x} ${source.y} C ${source.x} ${source.y + handle}, ${target.x} ${target.y - handle}, ${target.x} ${target.y}`;
-  }
-
-  const handle = Math.max(100, Math.abs(dx) * 0.45);
-  return `M ${source.x} ${source.y} C ${source.x + handle} ${source.y}, ${target.x - handle} ${target.y}, ${target.x} ${target.y}`;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  // Gravity droop: control points sit 35% along the straight line,
+  // then pushed downward to simulate a physical cable hanging under its weight.
+  const droop = Math.max(30, dist * 0.2);
+  return `M ${source.x} ${source.y} C ${source.x + dx * 0.35} ${source.y + dy * 0.35 + droop}, ${target.x - dx * 0.35} ${target.y - dy * 0.35 + droop}, ${target.x} ${target.y}`;
 }
 
 
@@ -462,7 +459,8 @@ export default function PatchEditor() {
           return "";
         }
 
-        return `<path d="${getConnectionPath(source, target)}" stroke="${cableColors[connection.color] || cableColors.modulation}" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.95" />`;
+        const color = cableColors[connection.color] || cableColors.modulation;
+        return `<path d="${getConnectionPath(source, target)}" stroke="${color}" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.95" /><circle cx="${source.x}" cy="${source.y}" r="5" fill="${color}" opacity="0.9" /><circle cx="${target.x}" cy="${target.y}" r="5" fill="${color}" opacity="0.9" />`;
       })
       .join("");
 
@@ -831,8 +829,9 @@ export default function PatchEditor() {
       panRef.current = null;
       cableDragRef.current = null;
       if (rerouteRef.current) {
-        setConnections((c) => [...c, rerouteRef.current.originalConnection]);
+        const original = rerouteRef.current.originalConnection;
         rerouteRef.current = null;
+        setConnections((c) => [...c, original]);
       }
       setIsPanning(false);
       setCablePreview(null);
@@ -2220,7 +2219,7 @@ export default function PatchEditor() {
             ) : null}
 
             <div
-              className="canvas-stage"
+              className={`canvas-stage${activeTool === "cable" ? " patching-mode" : ""}`}
               style={{
                 width: STAGE_WIDTH,
                 height: STAGE_HEIGHT,
@@ -2241,28 +2240,32 @@ export default function PatchEditor() {
                     return null;
                   }
 
+                  const color =
+                    cableColors[connection.color] || cableColors.modulation;
+                  const isSelected =
+                    selectedConnectionId === connection.id;
                   return (
-                    <path
-                      key={connection.id}
-                      className="connection-path"
-                      d={getConnectionPath(source, target)}
-                      stroke={
-                        cableColors[connection.color] || cableColors.modulation
-                      }
-                      strokeWidth={
-                        selectedConnectionId === connection.id ? "10" : "8"
-                      }
-                      strokeLinecap="round"
-                      fill="none"
-                      opacity={
-                        selectedConnectionId === connection.id ? "1" : "0.95"
-                      }
-                      onPointerDown={(event) => {
-                        event.stopPropagation();
-                        setSelectedConnectionId(connection.id);
-                        setSelectedNodeIds([]);
-                      }}
-                    />
+                    <g key={connection.id}>
+                      <path
+                        className="connection-path"
+                        d={getConnectionPath(source, target)}
+                        stroke={color}
+                        strokeWidth={isSelected ? "8" : "6"}
+                        strokeLinecap="round"
+                        fill="none"
+                        opacity={isSelected ? "1" : "0.95"}
+                        onPointerDown={(event) => {
+                          if (event.button !== 0 || event.metaKey || event.ctrlKey) {
+                            return;
+                          }
+                          event.stopPropagation();
+                          setSelectedConnectionId(connection.id);
+                          setSelectedNodeIds([]);
+                        }}
+                      />
+                      <circle cx={source.x} cy={source.y} r="5" fill={color} opacity="0.9" style={{ pointerEvents: "none" }} />
+                      <circle cx={target.x} cy={target.y} r="5" fill={color} opacity="0.9" style={{ pointerEvents: "none" }} />
+                    </g>
                   );
                 })}
                 {cablePreview ? (
@@ -2271,7 +2274,7 @@ export default function PatchEditor() {
                     stroke={
                       cableColors[cablePreview.color] || cableColors.modulation
                     }
-                    strokeWidth="8"
+                    strokeWidth="6"
                     strokeLinecap="round"
                     fill="none"
                     opacity="0.55"
