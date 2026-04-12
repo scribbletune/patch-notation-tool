@@ -2147,6 +2147,8 @@ export default function PatchEditor() {
             <span className="toolbar-note">
               Use Select for moving, a cable color for patching, and Text for
               annotations. Middle-drag or Cmd/Ctrl-drag pans the view port.
+              Middle-click or Cmd/Ctrl-click a patch point to reroute its
+              cable. Select a cable then click a color to change its type.
             </span>
           </div>
 
