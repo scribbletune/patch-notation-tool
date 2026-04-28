@@ -2,7 +2,10 @@
 const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "";
 const isUserPagesRepo = repositoryName.endsWith(".github.io");
 const basePath =
-  process.env.GITHUB_ACTIONS === "true" && repositoryName && !isUserPagesRepo
+  process.env.CUSTOM_DOMAIN !== "true" &&
+  process.env.GITHUB_ACTIONS === "true" &&
+  repositoryName &&
+  !isUserPagesRepo
     ? `/${repositoryName}`
     : "";
 
@@ -11,13 +14,13 @@ const nextConfig = {
   output: "export",
   trailingSlash: true,
   env: {
-    NEXT_PUBLIC_BASE_PATH: basePath
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
   images: {
-    unoptimized: true
+    unoptimized: true,
   },
   basePath,
-  assetPrefix: basePath || undefined
+  assetPrefix: basePath || undefined,
 };
 
 export default nextConfig;
